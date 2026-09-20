@@ -23,16 +23,25 @@ const {
 const personSchema = {
   '@context': 'https://schema.org',
   '@type': 'Person',
+  '@id': 'https://bishweshwar.com/#person',
   name: SITE.name,
+  givenName: 'Bishweshwar',
+  familyName: 'Shome',
   alternateName: [
     'Bishweshwar',
+    'Bishweshar',
+    'Bishweswar',
     'Bishweshwar Shome',
+    'Bishweshar Shome',
     'bshome19',
+    'bshome',
     'BISHWESHWAR SHOME',
     'BISHWESHWAR',
+    'BISHWESHAR',
     'Bishweshwar Golang',
     'Bishweshwar Software Engineer',
     'Bishweshwar Go Developer',
+    'Bishweshwar SDE III',
   ],
   url: SITE.url,
   image: image,
@@ -82,12 +91,15 @@ const personSchema = {
 const websiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
+  '@id': 'https://bishweshwar.com/#website',
   name: `${SITE.name} — Portfolio & Engineering Blog`,
   url: SITE.url,
   description: SITE.description,
+  publisher: {
+    '@id': 'https://bishweshwar.com/#person',
+  },
   author: {
-    '@type': 'Person',
-    name: SITE.name,
+    '@id': 'https://bishweshwar.com/#person',
   },
 };
 ---
@@ -103,7 +115,7 @@ const websiteSchema = {
     <meta name="copyright" content="© 2026 Bishweshwar Shome. All rights reserved." />
     <meta
       name="keywords"
-      content="Bishweshwar, Bishweshwar Shome, bishweshwar, bishweshwar shome, BISHWESHWAR, BISHWESHWAR SHOME, bshome19, bshome, bishweshwar software engineer, bishweshwar golang, bishweshwar go developer, bishweshwar sde iii, bishweshwar f5, bishweshwar ibm, bishweshwar bangalore, bishweshwar bengaluru, Senior Software Engineer, SDE III, Golang Developer, Go Developer, Distributed Systems, Microservices, F5 Networks, IBM, Bengaluru"
+      content="Bishweshwar, Bishweshar, Bishweshwar Shome, Bishweshar Shome, bishweshwar, bishweshar, bishweshwar shome, bishweshar shome, BISHWESHWAR, BISHWESHAR, BISHWESHWAR SHOME, bshome19, bshome, bishweshwar software engineer, bishweshwar golang, bishweshwar go developer, bishweshwar sde iii, bishweshwar f5, bishweshwar ibm, bishweshwar bangalore, bishweshwar bengaluru, Senior Software Engineer, SDE III, Golang Developer, Go Developer, Distributed Systems, Microservices, F5 Networks, IBM, Bengaluru"
     />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href={canonical} />
