@@ -2,7 +2,7 @@ export const SITE = {
   name: 'Bishweshwar Shome',
   title: 'Bishweshwar Shome | SDE III @ F5 | Golang Developer',
   description: 'Official portfolio of Bishweshwar Shome, Software Development Engineer III at F5 specializing in Golang backend architecture and distributed systems.',
-  url: 'https://bishweshwar.com',
+  url: 'https://www.bishweshwar.com',
   email: 'bshome19@gmail.com',
   location: 'Bengaluru, India',
   social: {

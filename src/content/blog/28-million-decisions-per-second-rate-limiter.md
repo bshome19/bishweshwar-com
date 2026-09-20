@@ -5,7 +5,7 @@ pubDate: 2024-04-10
 category: "go"
 tags: ["go", "redis", "concurrency", "distributed-systems", "performance"]
 featured: true
-canonicalUrl: "https://bishweshwar.com/blog/28-million-decisions-per-second-rate-limiter"
+canonicalUrl: "https://www.bishweshwar.com/blog/28-million-decisions-per-second-rate-limiter"
 readingTime: "7 min read"
 ---
 

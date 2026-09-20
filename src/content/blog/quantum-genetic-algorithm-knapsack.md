@@ -5,7 +5,7 @@ pubDate: 2023-11-10
 category: "quantum"
 tags: ["quantum-computing", "algorithms", "optimization", "evolutionary-computing", "python"]
 featured: true
-canonicalUrl: "https://bishweshwar.com/blog/quantum-genetic-algorithm-knapsack"
+canonicalUrl: "https://www.bishweshwar.com/blog/quantum-genetic-algorithm-knapsack"
 readingTime: "8 min read"
 ---
 

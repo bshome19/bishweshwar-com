@@ -23,7 +23,7 @@ const {
 const personSchema = {
   '@context': 'https://schema.org',
   '@type': 'Person',
-  '@id': 'https://bishweshwar.com/#person',
+  '@id': `${SITE.url}/#person`,
   name: SITE.name,
   givenName: 'Bishweshwar',
   familyName: 'Shome',
@@ -86,15 +86,15 @@ const personSchema = {
 const websiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  '@id': 'https://bishweshwar.com/#website',
+  '@id': `${SITE.url}/#website`,
   name: `${SITE.name} — Portfolio & Engineering Blog`,
   url: SITE.url,
   description: SITE.description,
   publisher: {
-    '@id': 'https://bishweshwar.com/#person',
+    '@id': `${SITE.url}/#person`,
   },
   author: {
-    '@id': 'https://bishweshwar.com/#person',
+    '@id': `${SITE.url}/#person`,
   },
 };
 ---

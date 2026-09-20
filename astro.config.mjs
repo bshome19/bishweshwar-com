@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://bishweshwar.com',
+  site: 'https://www.bishweshwar.com',
   integrations: [
     mdx(),
     sitemap(),

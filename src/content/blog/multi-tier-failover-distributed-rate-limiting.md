@@ -5,7 +5,7 @@ pubDate: 2024-05-18
 category: "distributed-systems"
 tags: ["distributed-systems", "fault-tolerance", "redis", "concurrency", "go", "high-availability"]
 featured: true
-canonicalUrl: "https://bishweshwar.com/blog/multi-tier-failover-distributed-rate-limiting"
+canonicalUrl: "https://www.bishweshwar.com/blog/multi-tier-failover-distributed-rate-limiting"
 readingTime: "7 min read"
 ---
 
