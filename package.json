@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "tsc --noEmit && astro build",
+    "build": "astro sync && astro build",
     "preview": "astro preview",
-    "check": "tsc --noEmit"
+    "check": "astro sync && tsc --noEmit"
   },
   "dependencies": {
     "@astrojs/mdx": "^3.1.9",
