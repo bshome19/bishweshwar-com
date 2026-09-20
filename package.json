@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro sync && astro build",
+    "build": "astro sync && astro build && cp dist/sitemap-0.xml dist/sitemap.xml",
     "preview": "astro preview",
     "check": "astro sync && tsc --noEmit"
   },

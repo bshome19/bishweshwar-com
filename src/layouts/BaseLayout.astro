@@ -45,12 +45,7 @@ const personSchema = {
   ],
   url: SITE.url,
   image: image,
-  jobTitle: [
-    'Senior Software Engineer',
-    'SDE III',
-    'Golang Developer',
-    'Backend Engineer',
-  ],
+  jobTitle: 'Senior Software Engineer (SDE III)',
   description: SITE.description,
   worksFor: {
     '@type': 'Organization',
@@ -137,7 +132,8 @@ const websiteSchema = {
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate" type="application/rss+xml" title={`${SITE.name} RSS Feed`} href="/rss.xml" />
-    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+    <link rel="sitemap" type="application/xml" title="Sitemap Index" href="/sitemap-index.xml" />
 
     <!-- Schema.org JSON-LD -->
     <script type="application/ld+json" set:html={JSON.stringify(personSchema)} />

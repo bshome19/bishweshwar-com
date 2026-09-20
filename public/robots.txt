@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
 
+Sitemap: https://bishweshwar.com/sitemap.xml
 Sitemap: https://bishweshwar.com/sitemap-index.xml
+Sitemap: https://www.bishweshwar.com/sitemap.xml
+Sitemap: https://www.bishweshwar.com/sitemap-index.xml
