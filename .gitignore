@@ -5,10 +5,15 @@ dist/
 # Dependencies
 node_modules/
 
-# Environment variables
+# Environment variables & secrets
 .env
-.env.production
-.env.local
+.env.*
+!.env.example
+
+# Specification & internal AI agent docs
+bishweshwar-portfolio-ai-agent-spec/
+.system_generated/
+scratch/
 
 # Logs
 npm-debug.log*
@@ -16,6 +21,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# System
+# OS & Editor
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
