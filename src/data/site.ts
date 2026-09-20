@@ -1,7 +1,7 @@
 export const SITE = {
   name: 'Bishweshwar Shome',
-  title: 'Bishweshwar Shome | Senior Software Engineer & Golang Developer',
-  description: 'Senior Software Engineer (SDE III) specializing in Go, Python, and distributed systems with 6+ years of experience in scalable microservices, high-throughput systems, and AI-driven workflows. Currently exploring Rust and Quantum Computing.',
+  title: 'Bishweshwar Shome | SDE III @ F5 | Golang Developer',
+  description: 'Official portfolio of Bishweshwar Shome, Software Development Engineer III at F5 specializing in Golang backend architecture and distributed systems.',
   url: 'https://bishweshwar.com',
   email: 'bshome19@gmail.com',
   location: 'Bengaluru, India',
