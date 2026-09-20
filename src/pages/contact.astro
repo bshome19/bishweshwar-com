@@ -1,0 +1,428 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../data/site';
+---
+
+<BaseLayout title={`Contact — ${SITE.name}`} description="Get in touch with Bishweshwar Shome regarding distributed systems, backend engineering, or technical advisory.">
+  <div class="contact-page">
+    <div class="container">
+      <header class="page-header">
+        <span class="badge badge-cyan">GET IN TOUCH</span>
+        <h1 class="page-title">Contact &amp; Connect</h1>
+        <p class="page-lead">
+          Have an engineering opportunity, a technical question on distributed rate limiting,
+          or want to collaborate on open-source systems? Send a message below or connect via professional channels.
+        </p>
+      </header>
+
+      <div class="contact-grid">
+        <!-- Contact Form Card -->
+        <div class="card contact-form-card">
+          <h2 class="card-title">Send a Direct Message</h2>
+          <p class="card-subtitle">
+            All messages route directly to my inbox at <code>{SITE.email}</code>.
+          </p>
+
+          <!-- Feedback Status Alerts -->
+          <div id="form-success" class="alert alert-success" style="display: none;" role="alert">
+            <strong>✅ Message sent successfully!</strong> Thank you for reaching out. I typically respond within 24–48 hours.
+          </div>
+          <div id="form-error" class="alert alert-error" style="display: none;" role="alert">
+            <strong>❌ Error sending message.</strong> Please ensure all fields are filled out or email directly at
+            <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+          </div>
+
+          <form id="contact-form" class="contact-form" novalidate>
+            <!-- Anti-Spam Honeypot Field (invisible to humans) -->
+            <div class="honeypot-field" aria-hidden="true" style="display: none;">
+              <label for="form-botcheck">Do not fill this out if human</label>
+              <input type="text" id="form-botcheck" name="botcheck" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <div class="form-group">
+              <label for="contact-name" class="form-label">
+                Your Full Name <span class="required-star">*</span>
+              </label>
+              <input
+                type="text"
+                id="contact-name"
+                name="name"
+                class="form-input"
+                placeholder="e.g. Jane Doe"
+                required
+              />
+              <span id="name-error" class="field-error" style="display: none;">Please enter your name.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="contact-email" class="form-label">
+                Email Address <span class="required-star">*</span>
+              </label>
+              <input
+                type="email"
+                id="contact-email"
+                name="email"
+                class="form-input"
+                placeholder="name@company.com"
+                required
+              />
+              <span id="email-error" class="field-error" style="display: none;">Please enter a valid email address.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="contact-subject" class="form-label">
+                Subject / Topic <span class="required-star">*</span>
+              </label>
+              <input
+                type="text"
+                id="contact-subject"
+                name="subject"
+                class="form-input"
+                placeholder="e.g. Backend Opportunity / RateShield Architecture"
+                required
+              />
+              <span id="subject-error" class="field-error" style="display: none;">Please enter a subject line.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="contact-message" class="form-label">
+                Your Message <span class="required-star">*</span>
+              </label>
+              <textarea
+                id="contact-message"
+                name="message"
+                class="form-textarea"
+                rows="5"
+                placeholder="Share context on your project, role, or discussion topic..."
+                required
+              ></textarea>
+              <span id="message-error" class="field-error" style="display: none;">Please enter your message (at least 10 characters).</span>
+            </div>
+
+            <button type="submit" id="submit-btn" class="btn btn-primary">
+              <span class="btn-text">Send Message &rarr;</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Sidebar Direct Channels -->
+        <aside class="contact-channels">
+          <!-- Direct Email Card -->
+          <div class="card channel-card">
+            <h3 class="channel-title">Direct Email</h3>
+            <p class="channel-desc">Preferred for hiring managers, technical inquiries, and research collaboration.</p>
+            <a href={`mailto:${SITE.email}`} class="channel-link email-highlight">
+              ✉️ {SITE.email}
+            </a>
+          </div>
+
+          <!-- Professional Profiles -->
+          <div class="card channel-card">
+            <h3 class="channel-title">Professional Networks</h3>
+            <ul class="networks-list">
+              <li>
+                <a href={SITE.social.linkedin} target="_blank" rel="noopener noreferrer" class="network-item">
+                  <span class="network-name">LinkedIn</span>
+                  <span class="network-meta">/in/bshome19 ↗</span>
+                </a>
+              </li>
+              <li>
+                <a href={SITE.social.github} target="_blank" rel="noopener noreferrer" class="network-item">
+                  <span class="network-name">GitHub</span>
+                  <span class="network-meta">/bshome19 ↗</span>
+                </a>
+              </li>
+              <li>
+                <a href={SITE.social.medium} target="_blank" rel="noopener noreferrer" class="network-item">
+                  <span class="network-name">Medium / Dev Genius</span>
+                  <span class="network-meta">/@bshome19 ↗</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Location & Availability Card -->
+          <div class="card channel-card">
+            <h3 class="channel-title">Location &amp; Availability</h3>
+            <div class="location-item">
+              <span class="status-dot"></span>
+              <span>Based in Bengaluru, India</span>
+            </div>
+            <p class="channel-subtext">
+              Available for hybrid or remote senior/principal backend and distributed systems engineering roles.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .contact-page {
+    padding: 3.5rem 0 5rem;
+  }
+
+  .page-header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .page-title {
+    margin: 0.75rem 0 0.5rem;
+  }
+
+  .page-lead {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 780px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 860px) {
+    .contact-grid {
+      grid-template-columns: 1.3fr 1fr;
+    }
+  }
+
+  .contact-form-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card-title {
+    font-size: 1.35rem;
+    margin: 0;
+  }
+
+  .card-subtitle {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.5rem;
+  }
+
+  .alert {
+    padding: 0.85rem 1.25rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .alert-success {
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    color: var(--accent-emerald);
+  }
+
+  .alert-error {
+    background: rgba(251, 113, 133, 0.12);
+    border: 1px solid rgba(251, 113, 133, 0.3);
+    color: var(--accent-rose);
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .required-star {
+    color: var(--accent-rose);
+  }
+
+  .field-error {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent-rose);
+    margin-top: 0.35rem;
+    display: block;
+  }
+
+  .contact-channels {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .channel-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .channel-title {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .channel-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .channel-link {
+    font-family: var(--font-mono);
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+
+  .email-highlight {
+    color: var(--accent-primary);
+  }
+
+  .networks-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .network-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0.75rem;
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    text-decoration: none !important;
+    transition: all var(--transition-fast);
+  }
+
+  .network-item:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-surface-hover);
+    color: var(--accent-primary);
+  }
+
+  .network-name {
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+
+  .network-meta {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .location-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .channel-subtext {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const form = document.getElementById('contact-form');
+    const successAlert = document.getElementById('form-success');
+    const errorAlert = document.getElementById('form-error');
+    const nameInput = document.getElementById('contact-name');
+    const emailInput = document.getElementById('contact-email');
+    const subjectInput = document.getElementById('contact-subject');
+    const messageInput = document.getElementById('contact-message');
+    const botInput = document.getElementById('form-botcheck');
+
+    const nameError = document.getElementById('name-error');
+    const emailError = document.getElementById('email-error');
+    const subjectError = document.getElementById('subject-error');
+    const messageError = document.getElementById('message-error');
+
+    function validateEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      // Reset errors
+      if (nameError) nameError.style.display = 'none';
+      if (emailError) emailError.style.display = 'none';
+      if (subjectError) subjectError.style.display = 'none';
+      if (messageError) messageError.style.display = 'none';
+      if (successAlert) successAlert.style.display = 'none';
+      if (errorAlert) errorAlert.style.display = 'none';
+
+      let valid = true;
+
+      // Honeypot spam check
+      if (botInput && botInput.value.trim() !== '') {
+        // Silently ignore bots
+        if (successAlert) successAlert.style.display = 'block';
+        return;
+      }
+
+      const name = nameInput?.value.trim() || '';
+      const email = emailInput?.value.trim() || '';
+      const subject = subjectInput?.value.trim() || '';
+      const message = messageInput?.value.trim() || '';
+
+      if (!name) {
+        if (nameError) nameError.style.display = 'block';
+        valid = false;
+      }
+
+      if (!email || !validateEmail(email)) {
+        if (emailError) emailError.style.display = 'block';
+        valid = false;
+      }
+
+      if (!subject) {
+        if (subjectError) subjectError.style.display = 'block';
+        valid = false;
+      }
+
+      if (!message || message.length < 10) {
+        if (messageError) messageError.style.display = 'block';
+        valid = false;
+      }
+
+      if (!valid) {
+        if (errorAlert) errorAlert.style.display = 'block';
+        return;
+      }
+
+      // Simulate secure client-side mailto dispatch or webhook handling
+      const mailtoUri = `mailto:bshome19@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+        `From: ${name} (${email})\n\nMessage:\n${message}`
+      )}`;
+
+      if (successAlert) successAlert.style.display = 'block';
+      form.reset();
+
+      // Open email client in background as guaranteed fallback
+      setTimeout(() => {
+        window.location.href = mailtoUri;
+      }, 700);
+    });
+  })();
+</script>

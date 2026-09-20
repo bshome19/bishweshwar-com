@@ -1,0 +1,396 @@
+---
+// Interactive Quantum Qubit & Rotation Gate Simulator
+---
+
+<div class="quantum-sim-card">
+  <div class="sim-header">
+    <div class="sim-title-group">
+      <span class="badge badge-purple">INTERACTIVE LAB</span>
+      <h3 class="sim-title">Qubit Superposition &amp; Rotation Simulator</h3>
+    </div>
+    <span class="sim-status">
+      <span class="status-dot"></span> State: Active
+    </span>
+  </div>
+
+  <p class="sim-intro">
+    Adjust the rotation angle &theta; using the slider below to observe how the state vector
+    <code>|&psi;&rang; = &alpha;|0&rang; + &beta;|1&rang;</code> shifts and probabilities
+    <code>|&alpha;|&sup2;</code> vs <code>|&beta;|&sup2;</code> evolve.
+  </p>
+
+  <div class="sim-body">
+    <!-- Controls -->
+    <div class="sim-controls">
+      <div class="control-row">
+        <label for="theta-slider" class="control-label">
+          <span>Rotation Angle (&theta;):</span>
+          <span id="theta-display" class="control-val">0.785 rad (45&deg;)</span>
+        </label>
+        <input
+          type="range"
+          id="theta-slider"
+          min="0"
+          max="3.14159"
+          step="0.01"
+          value="0.78539"
+          class="slider"
+        />
+      </div>
+
+      <div class="gate-buttons">
+        <button type="button" class="btn btn-sm btn-secondary gate-btn" data-angle="0">State |0&rang;</button>
+        <button type="button" class="btn btn-sm btn-secondary gate-btn" data-angle="0.78539">Hadamard (H)</button>
+        <button type="button" class="btn btn-sm btn-secondary gate-btn" data-angle="1.57079">State |1&rang;</button>
+        <button type="button" class="btn btn-sm btn-secondary gate-btn" data-angle="2.35619">3&pi;/4</button>
+      </div>
+
+      <div class="action-row">
+        <button type="button" id="measure-btn" class="btn btn-primary btn-sm">
+          🎲 Measure Qubit (Collapse)
+        </button>
+        <button type="button" id="sample-100-btn" class="btn btn-secondary btn-sm">
+          Sample 100 Shots
+        </button>
+      </div>
+    </div>
+
+    <!-- Visualization Grid -->
+    <div class="sim-display-grid">
+      <!-- State Amplitudes -->
+      <div class="display-box">
+        <h4 class="box-title">State Amplitudes</h4>
+        <div class="amplitude-rows">
+          <div class="amp-item">
+            <span class="amp-label">&alpha; = cos(&theta;):</span>
+            <span id="alpha-val" class="amp-val">0.7071</span>
+          </div>
+          <div class="amp-item">
+            <span class="amp-label">&beta; = sin(&theta;):</span>
+            <span id="beta-val" class="amp-val">0.7071</span>
+          </div>
+          <div class="amp-item formula">
+            <code>|&psi;&rang; = <span id="formula-alpha">0.71</span>|0&rang; + <span id="formula-beta">0.71</span>|1&rang;</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Measurement Probabilities -->
+      <div class="display-box">
+        <h4 class="box-title">Probability Distributions</h4>
+        <div class="prob-meter">
+          <div class="prob-labels">
+            <span>P(|0&rang;) = |&alpha;|&sup2;: <strong id="prob-0-text">50.0%</strong></span>
+            <span>P(|1&rang;) = |&beta;|&sup2;: <strong id="prob-1-text">50.0%</strong></span>
+          </div>
+          <div class="meter-track">
+            <div id="prob-bar-0" class="meter-fill-0" style="width: 50%;"></div>
+            <div id="prob-bar-1" class="meter-fill-1" style="width: 50%;"></div>
+          </div>
+        </div>
+
+        <div class="measurement-result">
+          <span class="result-label">Latest Measurement:</span>
+          <span id="latest-collapse" class="result-badge badge-cyan">Ready to observe</span>
+        </div>
+        <div id="shot-stats" class="shot-stats" style="display: none;">
+          Sample results: |0&rang;: <span id="shots-0">0</span> &bull; |1&rang;: <span id="shots-1">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .quantum-sim-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin: 2rem 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .sim-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .sim-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sim-title {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .sim-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent-emerald);
+  }
+
+  .sim-intro {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+  }
+
+  .sim-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sim-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: var(--bg-base);
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .control-val {
+    font-family: var(--font-mono);
+    color: var(--accent-cyan);
+  }
+
+  .slider {
+    width: 100%;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+  }
+
+  .gate-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .sim-display-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 680px) {
+    .sim-display-grid {
+      grid-template-columns: 1fr 1.2fr;
+    }
+  }
+
+  .display-box {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+
+  .box-title {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  .amplitude-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .amp-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+  }
+
+  .amp-val {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .amp-item.formula {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .prob-meter {
+    margin-bottom: 1rem;
+  }
+
+  .prob-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+
+  .meter-track {
+    display: flex;
+    height: 14px;
+    width: 100%;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--bg-muted);
+  }
+
+  .meter-fill-0 {
+    background: var(--accent-cyan);
+    transition: width 0.15s ease;
+  }
+
+  .meter-fill-1 {
+    background: var(--accent-purple);
+    transition: width 0.15s ease;
+  }
+
+  .measurement-result {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .result-badge {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .shot-stats {
+    margin-top: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const slider = document.getElementById('theta-slider');
+    const thetaDisplay = document.getElementById('theta-display');
+    const alphaVal = document.getElementById('alpha-val');
+    const betaVal = document.getElementById('beta-val');
+    const formulaAlpha = document.getElementById('formula-alpha');
+    const formulaBeta = document.getElementById('formula-beta');
+    const prob0Text = document.getElementById('prob-0-text');
+    const prob1Text = document.getElementById('prob-1-text');
+    const probBar0 = document.getElementById('prob-bar-0');
+    const probBar1 = document.getElementById('prob-bar-1');
+    const latestCollapse = document.getElementById('latest-collapse');
+    const measureBtn = document.getElementById('measure-btn');
+    const sample100Btn = document.getElementById('sample-100-btn');
+    const shotStats = document.getElementById('shot-stats');
+    const shots0 = document.getElementById('shots-0');
+    const shots1 = document.getElementById('shots-1');
+    const gateButtons = document.querySelectorAll('.gate-btn');
+
+    function updateQuantumState(theta) {
+      const alpha = Math.cos(theta);
+      const beta = Math.sin(theta);
+      const prob0 = alpha * alpha;
+      const prob1 = beta * beta;
+      const deg = Math.round((theta * 180) / Math.PI);
+
+      if (thetaDisplay) thetaDisplay.textContent = `${theta.toFixed(3)} rad (${deg}°)`;
+      if (alphaVal) alphaVal.textContent = alpha.toFixed(4);
+      if (betaVal) betaVal.textContent = beta.toFixed(4);
+      if (formulaAlpha) formulaAlpha.textContent = alpha.toFixed(2);
+      if (formulaBeta) formulaBeta.textContent = beta.toFixed(2);
+      if (prob0Text) prob0Text.textContent = `${(prob0 * 100).toFixed(1)}%`;
+      if (prob1Text) prob1Text.textContent = `${(prob1 * 100).toFixed(1)}%`;
+      if (probBar0) probBar0.style.width = `${(prob0 * 100).toFixed(1)}%`;
+      if (probBar1) probBar1.style.width = `${(prob1 * 100).toFixed(1)}%`;
+    }
+
+    slider?.addEventListener('input', (e) => {
+      const theta = parseFloat(e.target.value);
+      updateQuantumState(theta);
+    });
+
+    gateButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const angle = parseFloat(btn.getAttribute('data-angle') || '0');
+        if (slider) slider.value = angle.toString();
+        updateQuantumState(angle);
+      });
+    });
+
+    measureBtn?.addEventListener('click', () => {
+      const theta = parseFloat(slider?.value || '0');
+      const prob1 = Math.sin(theta) ** 2;
+      const collapsed = Math.random() < prob1 ? 1 : 0;
+      if (latestCollapse) {
+        latestCollapse.textContent = `Collapsed to |${collapsed}⟩`;
+        latestCollapse.className = collapsed === 0 ? 'result-badge badge-cyan' : 'result-badge badge-purple';
+      }
+    });
+
+    sample100Btn?.addEventListener('click', () => {
+      const theta = parseFloat(slider?.value || '0');
+      const prob1 = Math.sin(theta) ** 2;
+      let count0 = 0;
+      let count1 = 0;
+
+      for (let i = 0; i < 100; i++) {
+        if (Math.random() < prob1) {
+          count1++;
+        } else {
+          count0++;
+        }
+      }
+
+      if (shots0) shots0.textContent = count0.toString();
+      if (shots1) shots1.textContent = count1.toString();
+      if (shotStats) shotStats.style.display = 'block';
+    });
+
+    // Initialize state
+    if (slider) {
+      updateQuantumState(parseFloat(slider.value));
+    }
+  })();
+</script>

@@ -1,0 +1,230 @@
+---
+import { SITE } from '../data/site';
+
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-grid">
+      <!-- Col 1: Bio / Identity -->
+      <div class="footer-col brand-col">
+        <a href="/" class="footer-brand">
+          <span class="brand-prompt">&gt;</span> bishweshwar.com
+        </a>
+        <p class="footer-tagline">
+          Engineering scalable microservices, high-throughput distributed systems, and AI-driven workflows.
+        </p>
+        <div class="footer-location">
+          <span class="status-dot"></span>
+          <span>Bengaluru, India (UTC+5:30)</span>
+        </div>
+      </div>
+
+      <!-- Col 2: Navigation -->
+      <div class="footer-col">
+        <h2 class="footer-heading">Navigation</h2>
+        <ul class="footer-links">
+          <li><a href="/about">About & Background</a></li>
+          <li><a href="/experience">Work Experience</a></li>
+          <li><a href="/projects">Projects Showcase</a></li>
+          <li><a href="/labs">Technical Labs</a></li>
+          <li><a href="/blog">Engineering Blog</a></li>
+          <li><a href="/resume">Printable Résumé</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 3: Research & Labs -->
+      <div class="footer-col">
+        <h2 class="footer-heading">Specializations</h2>
+        <ul class="footer-links">
+          <li><a href="/labs/go">Go & High Concurrency</a></li>
+          <li><a href="/labs/distributed-systems">Distributed Systems</a></li>
+          <li><a href="/labs/quantum">Quantum Computing (QGA)</a></li>
+          <li><a href="/labs/rust">Rust & Systems Programming</a></li>
+          <li><a href="/labs/ai">AI & Workflow Automation</a></li>
+          <li><a href="/labs/cryptography">Applied Cryptography</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 4: Connect & Feed -->
+      <div class="footer-col">
+        <h2 class="footer-heading">Connect</h2>
+        <ul class="footer-links">
+          <li>
+            <a href={SITE.social.github} target="_blank" rel="noopener noreferrer">
+              GitHub <span class="external-arrow">↗</span>
+            </a>
+          </li>
+          <li>
+            <a href={SITE.social.linkedin} target="_blank" rel="noopener noreferrer">
+              LinkedIn <span class="external-arrow">↗</span>
+            </a>
+          </li>
+          <li>
+            <a href={SITE.social.medium} target="_blank" rel="noopener noreferrer">
+              Medium <span class="external-arrow">↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="/rss.xml" class="rss-link">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 11a9 9 0 0 1 9 9"></path>
+                <path d="M4 4a16 16 0 0 1 16 16"></path>
+                <circle cx="5" cy="19" r="1"></circle>
+              </svg>
+              <span>RSS Feed</span>
+            </a>
+          </li>
+          <li>
+            <a href="/sitemap-index.xml">Sitemap</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="copyright">
+        &copy; {currentYear} Bishweshwar Shome. Built with Astro &amp; TypeScript. Zero tracking scripts.
+      </p>
+      <div class="footer-badges">
+        <span class="badge">Static HTML</span>
+        <span class="badge badge-cyan">Sub-40ns Architecture</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    padding: 4rem 0 2.5rem;
+    font-size: 0.875rem;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+  }
+
+  .footer-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .footer-grid {
+      grid-template-columns: 1.6fr 1fr 1.2fr 1fr;
+    }
+  }
+
+  .footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .footer-brand {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-decoration: none !important;
+  }
+
+  .brand-prompt {
+    color: var(--accent-primary);
+  }
+
+  .footer-tagline {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+  }
+
+  .footer-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .footer-heading {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 0.25rem;
+  }
+
+  .footer-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .footer-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .footer-links a:hover {
+    color: var(--accent-primary);
+  }
+
+  .external-arrow {
+    font-size: 0.75rem;
+    opacity: 0.6;
+  }
+
+  .rss-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .footer-bottom {
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  @media (min-width: 640px) {
+    .footer-bottom {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  .copyright {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    margin: 0;
+  }
+
+  .footer-badges {
+    display: flex;
+    gap: 0.5rem;
+  }
+</style>

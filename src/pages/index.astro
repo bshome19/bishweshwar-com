@@ -1,0 +1,622 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, EXPERIENCES } from '../data/site';
+import { getCollection } from 'astro:content';
+
+const allBlogPosts = await getCollection('blog', ({ data }) => !data.draft);
+const latestPosts = allBlogPosts
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
+  .slice(0, 3);
+
+const allProjects = await getCollection('projects');
+const featuredProjects = allProjects
+  .filter((p) => p.data.featured)
+  .sort((a, b) => a.data.order - b.data.order);
+
+const allLabs = await getCollection('labs');
+const featuredLabs = allLabs
+  .filter((l) => l.data.featured)
+  .sort((a, b) => a.data.order - b.data.order);
+---
+
+<BaseLayout title={`${SITE.name} — Senior Software Engineer`}>
+  <!-- HERO SECTION -->
+  <section class="hero-section">
+    <div class="container hero-inner">
+      <div class="hero-badge-row">
+        <span class="badge badge-active">
+          <span class="status-dot"></span> Available for Senior / Principal Engineering Roles
+        </span>
+        <span class="badge badge-cyan">6+ Years Backend &amp; Distributed Systems</span>
+      </div>
+
+      <h1 class="hero-title">
+        Bishweshwar Shome
+      </h1>
+
+      <p class="hero-tagline">
+        Senior Software Engineer specializing in <strong>Go</strong>, <strong>distributed systems</strong>,
+        and <strong>high-throughput microservices</strong>. Experienced in building automated AI-driven engineering workflows
+        and optimizing critical latency paths. Currently exploring <strong>Rust</strong> and <strong>Quantum Computing</strong>.
+      </p>
+
+      <div class="hero-cta-group">
+        <a href="/projects" class="btn btn-primary">
+          View Projects
+        </a>
+        <a href="/labs" class="btn btn-secondary">
+          Explore Labs 🔬
+        </a>
+        <a href="/resume" class="btn btn-secondary">
+          Résumé
+        </a>
+        <a href={SITE.social.github} target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+          GitHub ↗
+        </a>
+      </div>
+
+      <!-- Current Focus Callout -->
+      <div class="current-focus-card">
+        <div class="focus-header">
+          <span class="badge badge-amber">CURRENT FOCUS</span>
+          <span class="focus-role">{SITE.currentRole.title} @ {SITE.currentRole.company}</span>
+        </div>
+        <p class="focus-desc">
+          {SITE.currentRole.focus}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED PROJECTS -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <span class="badge badge-cyan">PORTFOLIO</span>
+          <h2 class="section-title">Featured Engineering Projects</h2>
+        </div>
+        <a href="/projects" class="section-link">View all projects &rarr;</a>
+      </div>
+
+      <div class="projects-grid">
+        {
+          featuredProjects.map((project) => (
+            <article class="card card-interactive project-card">
+              <div class="project-card-header">
+                <span class="badge badge-cyan">{project.data.category}</span>
+                {project.data.status === 'active' && <span class="badge badge-active">Active</span>}
+              </div>
+
+              <h3 class="project-title">
+                <a href={`/projects/${project.slug}`}>{project.data.title}</a>
+              </h3>
+
+              <p class="project-desc">{project.data.description}</p>
+
+              {project.data.metrics && (
+                <ul class="project-metrics">
+                  {project.data.metrics.slice(0, 3).map((m) => (
+                    <li>&bull; {m}</li>
+                  ))}
+                </ul>
+              )}
+
+              <div class="project-footer">
+                <div class="tech-pills">
+                  {project.data.technologies.slice(0, 4).map((tech) => (
+                    <span class="badge">{tech}</span>
+                  ))}
+                </div>
+                <div class="project-links">
+                  {project.data.github && (
+                    <a href={project.data.github} target="_blank" rel="noopener noreferrer" class="code-link" aria-label="GitHub Repository">
+                      GitHub ↗
+                    </a>
+                  )}
+                  <a href={`/projects/${project.slug}`} class="details-link">
+                    Case Study &rarr;
+                  </a>
+                </div>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- LABS / RESEARCH -->
+  <section class="section section-labs">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <span class="badge badge-purple">LABORATORY</span>
+          <h2 class="section-title">Experiments &amp; Technical Labs</h2>
+        </div>
+        <a href="/labs" class="section-link">Explore all labs &rarr;</a>
+      </div>
+
+      <p class="section-subtitle">
+        In-depth technical experiments across concurrency, quantum superposition, distributed failover, and AST analysis.
+      </p>
+
+      <div class="labs-grid">
+        {
+          featuredLabs.map((lab) => (
+            <article class="card card-interactive lab-card">
+              <div class="lab-card-top">
+                <span class="badge badge-purple">{lab.data.category.toUpperCase()}</span>
+                <span class="badge">{lab.data.status}</span>
+              </div>
+              <h3 class="lab-title">
+                <a href={`/labs/${lab.data.category}/${lab.slug.split('/').pop()}`}>{lab.data.title}</a>
+              </h3>
+              <p class="lab-desc">{lab.data.description}</p>
+              <div class="lab-footer">
+                <div class="tech-pills">
+                  {lab.data.technologies.slice(0, 3).map((t) => (
+                    <span class="badge">{t}</span>
+                  ))}
+                </div>
+                <a href={`/labs/${lab.data.category}/${lab.slug.split('/').pop()}`} class="details-link">
+                  Inspect Lab &rarr;
+                </a>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE TIMELINE PREVIEW -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <span class="badge badge-cyan">CAREER HISTORY</span>
+          <h2 class="section-title">Selected Engineering Roles</h2>
+        </div>
+        <a href="/experience" class="section-link">Full career timeline &rarr;</a>
+      </div>
+
+      <div class="experience-list">
+        {
+          EXPERIENCES.slice(0, 3).map((exp) => (
+            <div class="card experience-card">
+              <div class="exp-header">
+                <div>
+                  <h3 class="exp-role">{exp.role}</h3>
+                  <div class="exp-company">
+                    <strong>{exp.company}</strong>
+                    {exp.subcontract && <span class="exp-sub">({exp.subcontract})</span>}
+                  </div>
+                </div>
+                <div class="exp-meta">
+                  <span class="badge">{exp.period}</span>
+                  <span class="exp-loc">{exp.location}</span>
+                </div>
+              </div>
+
+              <ul class="exp-bullets">
+                {exp.highlights.slice(0, 2).map((h) => (
+                  <li>{h}</li>
+                ))}
+              </ul>
+
+              <div class="tech-pills">
+                {exp.skills.map((s) => (
+                  <span class="badge">{s}</span>
+                ))}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- LATEST WRITING -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <span class="badge badge-amber">PUBLICATIONS</span>
+          <h2 class="section-title">Latest Technical Writing</h2>
+        </div>
+        <a href="/blog" class="section-link">View all articles &rarr;</a>
+      </div>
+
+      <div class="blog-grid">
+        {
+          latestPosts.map((post) => (
+            <article class="card card-interactive blog-card">
+              <div class="blog-meta">
+                <span class="badge badge-cyan">{post.data.category.toUpperCase()}</span>
+                <span class="blog-date">
+                  {new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(post.data.pubDate)}
+                </span>
+                {post.data.readingTime && <span class="blog-read">{post.data.readingTime}</span>}
+              </div>
+
+              <h3 class="blog-title">
+                <a href={`/blog/${post.slug}`}>{post.data.title}</a>
+              </h3>
+
+              <p class="blog-excerpt">{post.data.description}</p>
+
+              <div class="blog-footer">
+                <div class="tech-pills">
+                  {post.data.tags.slice(0, 3).map((t) => (
+                    <span class="badge">#{t}</span>
+                  ))}
+                </div>
+                <a href={`/blog/${post.slug}`} class="details-link">
+                  Read Article &rarr;
+                </a>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT CTA -->
+  <section class="section section-cta">
+    <div class="container">
+      <div class="card cta-card">
+        <div class="cta-content">
+          <span class="badge badge-cyan">GET IN TOUCH</span>
+          <h2 class="cta-title">Interested in building resilient systems together?</h2>
+          <p class="cta-desc">
+            Whether you want to discuss backend architectures, rate limiting benchmarks, quantum algorithms, or engineering leadership opportunities, I'd welcome the conversation.
+          </p>
+          <div class="cta-actions">
+            <a href="/contact" class="btn btn-primary">
+              Send a Message
+            </a>
+            <a href={SITE.social.linkedin} target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+              Connect on LinkedIn ↗
+            </a>
+            <a href={`mailto:${SITE.email}`} class="btn btn-secondary">
+              {SITE.email}
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Hero */
+  .hero-section {
+    padding: 4.5rem 0 3.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    background: radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 85% 25%, rgba(192, 132, 252, 0.04) 0%, transparent 45%);
+  }
+
+  .hero-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .hero-badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .hero-title {
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+
+  .hero-tagline {
+    font-size: clamp(1.1rem, 2vw, 1.25rem);
+    color: var(--text-secondary);
+    max-width: 820px;
+    line-height: 1.7;
+  }
+
+  .hero-tagline strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .hero-cta-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .current-focus-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .focus-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .focus-role {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .focus-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* Sections */
+  .section {
+    padding: 4.5rem 0;
+  }
+
+  .section-labs {
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .section-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 2.25rem;
+  }
+
+  .section-title {
+    margin: 0.5rem 0 0;
+  }
+
+  .section-subtitle {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    max-width: 700px;
+    margin-top: -1.25rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .section-link {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+  }
+
+  /* Projects Grid */
+  .projects-grid, .labs-grid, .blog-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .projects-grid, .labs-grid, .blog-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .project-card, .lab-card, .blog-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .project-card-header, .lab-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .project-title, .lab-title, .blog-title {
+    font-size: 1.25rem;
+    margin: 0 0 0.75rem;
+    line-height: 1.35;
+  }
+
+  .project-title a, .lab-title a, .blog-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .project-title a:hover, .lab-title a:hover, .blog-title a:hover {
+    color: var(--accent-primary);
+  }
+
+  .project-desc, .lab-desc, .blog-excerpt {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    flex: 1;
+  }
+
+  .project-metrics {
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .project-footer, .lab-footer, .blog-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .tech-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .project-links {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .code-link {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+
+  .details-link {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+  }
+
+  /* Experience list */
+  .experience-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .experience-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .exp-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .exp-role {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .exp-company {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+  }
+
+  .exp-sub {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-left: 0.35rem;
+  }
+
+  .exp-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+  }
+
+  .exp-loc {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .exp-bullets {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .exp-bullets li {
+    position: relative;
+    padding-left: 1.25rem;
+  }
+
+  .exp-bullets li::before {
+    content: "▹";
+    position: absolute;
+    left: 0;
+    color: var(--accent-primary);
+  }
+
+  /* Blog meta */
+  .blog-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  /* CTA Section */
+  .cta-card {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(192, 132, 252, 0.05) 100%), var(--bg-surface);
+    border: 1px solid var(--border-default);
+    padding: 3rem 2rem;
+  }
+
+  .cta-content {
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .cta-title {
+    margin: 0;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+  }
+
+  .cta-desc {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+</style>

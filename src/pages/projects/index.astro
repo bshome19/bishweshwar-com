@@ -1,0 +1,280 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../data/site';
+import { getCollection } from 'astro:content';
+
+const projects = await getCollection('projects');
+const sortedProjects = projects.sort((a, b) => a.data.order - b.data.order);
+
+const categories = ['All', ...new Set(projects.map((p) => p.data.category).filter(Boolean))];
+---
+
+<BaseLayout title={`Projects — ${SITE.name}`} description="Selected backend, distributed systems, quantum computing, and microservice projects built by Bishweshwar Shome.">
+  <div class="projects-page">
+    <div class="container">
+      <header class="page-header">
+        <span class="badge badge-cyan">PORTFOLIO</span>
+        <h1 class="page-title">Engineering Projects</h1>
+        <p class="page-lead">
+          Open-source libraries, distributed systems infrastructure, quantum algorithms, and production microservice architectures.
+        </p>
+      </header>
+
+      <!-- Category Filter Pills -->
+      <div class="filter-container">
+        <div class="filter-pills" role="tablist">
+          {
+            categories.map((cat, idx) => (
+              <button
+                type="button"
+                class:list={['filter-btn', { active: idx === 0 }]}
+                data-category={cat}
+                role="tab"
+                aria-selected={idx === 0 ? 'true' : 'false'}
+              >
+                {cat}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- Projects Grid -->
+      <div class="projects-grid" id="projects-grid">
+        {
+          sortedProjects.map((project) => (
+            <article class="card card-interactive project-card" data-category={project.data.category}>
+              <div class="project-header">
+                <span class="badge badge-cyan">{project.data.category}</span>
+                <span class:list={['badge', project.data.status === 'active' ? 'badge-active' : '']}>
+                  {project.data.status === 'active' && <span class="status-dot"></span>}
+                  {project.data.status}
+                </span>
+              </div>
+
+              <h2 class="project-title">
+                <a href={`/projects/${project.slug}`}>{project.data.title}</a>
+              </h2>
+
+              <p class="project-desc">{project.data.description}</p>
+
+              {project.data.metrics && (
+                <div class="metrics-box">
+                  <span class="metrics-label">Architecture Highlights:</span>
+                  <ul class="metrics-list">
+                    {project.data.metrics.map((m) => (
+                      <li>&bull; {m}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div class="project-footer">
+                <div class="tech-pills">
+                  {project.data.technologies.map((t) => (
+                    <span class="badge">{t}</span>
+                  ))}
+                </div>
+                <div class="project-actions">
+                  {project.data.github && (
+                    <a href={project.data.github} target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+                      GitHub ↗
+                    </a>
+                  )}
+                  <a href={`/projects/${project.slug}`} class="btn btn-primary btn-sm">
+                    Case Study &rarr;
+                  </a>
+                </div>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .projects-page {
+    padding: 3.5rem 0 5rem;
+  }
+
+  .page-header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 2rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .page-title {
+    margin: 0.75rem 0 0.5rem;
+  }
+
+  .page-lead {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 780px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .filter-container {
+    margin-bottom: 2.5rem;
+  }
+
+  .filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .filter-btn {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.45rem 0.9rem;
+    border-radius: var(--radius-full);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .filter-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+  }
+
+  .filter-btn.active {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    border-color: var(--accent-primary);
+    font-weight: 600;
+  }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 800px) {
+    .projects-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .project-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .project-title {
+    font-size: 1.35rem;
+    margin: 0 0 0.75rem;
+    line-height: 1.35;
+  }
+
+  .project-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .project-title a:hover {
+    color: var(--accent-primary);
+  }
+
+  .project-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+  }
+
+  .metrics-box {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .metrics-label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+
+  .metrics-list {
+    list-style: none;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .project-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: auto;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .tech-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .project-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const cards = document.querySelectorAll('.project-card');
+
+    filterButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach((b) => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+
+        const cat = btn.getAttribute('data-category');
+
+        cards.forEach((card) => {
+          const cardCat = card.getAttribute('data-category');
+          if (cat === 'All' || cardCat === cat) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+  })();
+</script>

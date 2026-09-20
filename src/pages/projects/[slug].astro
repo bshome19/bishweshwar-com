@@ -1,0 +1,219 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RateLimiterBenchmark from '../../components/RateLimiterBenchmark.astro';
+import QuantumSimulator from '../../components/QuantumSimulator.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({
+    params: { slug: project.slug },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content } = await project.render();
+---
+
+<BaseLayout title={`${project.data.title} — Case Study`} description={project.data.description}>
+  <div class="case-study-page">
+    <div class="container-article">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumbs" aria-label="Breadcrumbs">
+        <a href="/">Home</a>
+        <span class="breadcrumb-sep">/</span>
+        <a href="/projects">Projects</a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">{project.slug}</span>
+      </nav>
+
+      <!-- Case Study Header -->
+      <header class="case-header">
+        <div class="meta-badges">
+          <span class="badge badge-cyan">{project.data.category}</span>
+          <span class:list={['badge', project.data.status === 'active' ? 'badge-active' : '']}>
+            {project.data.status === 'active' && <span class="status-dot"></span>}
+            {project.data.status}
+          </span>
+        </div>
+
+        <h1 class="case-title">{project.data.title}</h1>
+        <p class="case-desc">{project.data.description}</p>
+
+        {project.data.metrics && (
+          <div class="metrics-card">
+            <h2 class="metrics-title">Key Architectural Highlights</h2>
+            <ul class="metrics-grid">
+              {project.data.metrics.map((m) => (
+                <li class="metric-item">
+                  <span class="metric-icon">✓</span>
+                  <span>{m}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div class="case-meta-row">
+          <div class="tech-pills">
+            {project.data.technologies.map((t) => (
+              <span class="badge">{t}</span>
+            ))}
+          </div>
+
+          <div class="action-links">
+            {project.data.github && (
+              <a href={project.data.github} target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+                View GitHub Repository ↗
+              </a>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <!-- Interactive Playground Island if applicable -->
+      {project.slug === 'rateshield' && <RateLimiterBenchmark />}
+      {project.slug === 'quantum-knapsack-optimizer' && <QuantumSimulator />}
+
+      <!-- Case Study Content Body -->
+      <div class="prose case-body">
+        <Content />
+      </div>
+
+      <footer class="case-footer">
+        <a href="/projects" class="btn btn-secondary btn-sm">
+          &larr; Back to all projects
+        </a>
+      </footer>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .case-study-page {
+    padding: 3.5rem 0 5rem;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .breadcrumbs a {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--accent-primary);
+  }
+
+  .breadcrumb-sep {
+    color: var(--border-default);
+  }
+
+  .breadcrumb-current {
+    color: var(--text-primary);
+  }
+
+  .case-header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 2rem;
+    margin-bottom: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .meta-badges {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .case-title {
+    font-size: clamp(2rem, 3.5vw, 2.75rem);
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .case-desc {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .metrics-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+  }
+
+  .metrics-title {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 0 0 0.75rem;
+  }
+
+  .metrics-grid {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+  }
+
+  @media (min-width: 600px) {
+    .metrics-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .metric-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .metric-icon {
+    color: var(--accent-emerald);
+    font-weight: bold;
+  }
+
+  .case-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .tech-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .case-body {
+    margin-bottom: 4rem;
+  }
+
+  .case-footer {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 2rem;
+  }
+</style>

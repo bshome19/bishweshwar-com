@@ -1,0 +1,318 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import QuantumSimulator from '../../components/QuantumSimulator.astro';
+import RateLimiterBenchmark from '../../components/RateLimiterBenchmark.astro';
+import { SITE } from '../../data/site';
+import { getCollection } from 'astro:content';
+
+const labs = await getCollection('labs');
+
+const categories = [
+  {
+    id: 'go',
+    title: 'Go & High Concurrency',
+    icon: '⚡',
+    desc: 'Zero-allocation memory engines, 64-shard mutex partitioning, and microsecond profiling.',
+    badge: 'go',
+  },
+  {
+    id: 'quantum',
+    title: 'Quantum Computing',
+    icon: '🔮',
+    desc: 'Quantum genetic algorithms, qubit state superposition, rotation gates, and combinatorial search.',
+    badge: 'quantum',
+  },
+  {
+    id: 'distributed-systems',
+    title: 'Distributed Systems',
+    icon: '🌐',
+    desc: 'Resilient multi-tier failovers, Redis Lua atomic clustering, consensus, and partition recovery.',
+    badge: 'distributed-systems',
+  },
+  {
+    id: 'rust',
+    title: 'Rust & Systems Programming',
+    icon: '🦀',
+    desc: 'Memory safety without garbage collection, borrow checker semantics, and lock-free channels.',
+    badge: 'rust',
+  },
+  {
+    id: 'ai',
+    title: 'AI & Engineering Productivity',
+    icon: '🤖',
+    desc: 'Autonomous MR diff coverage agents, AST parsing, and closed-loop test generation.',
+    badge: 'ai',
+  },
+  {
+    id: 'cryptography',
+    title: 'Applied Cryptography',
+    icon: '🔒',
+    desc: 'AEAD ciphers (AES-GCM, ChaCha20-Poly1305), forward secrecy, and key exchange primitives.',
+    badge: 'cryptography',
+  },
+];
+---
+
+<BaseLayout title={`Technical Labs & Research — ${SITE.name}`} description="Experimental laboratories covering Go zero-allocation concurrency, quantum genetic algorithms, distributed failover, and systems programming.">
+  <div class="labs-page">
+    <div class="container">
+      <header class="page-header">
+        <span class="badge badge-purple">ENGINEERING LABORATORY</span>
+        <h1 class="page-title">Technical Labs &amp; Research</h1>
+        <p class="page-lead">
+          An interactive laboratory documenting deep systems experiments, benchmark stress-tests,
+          and theoretical explorations across distributed computing and quantum mechanics.
+        </p>
+      </header>
+
+      <!-- Category Navigation Cards -->
+      <section class="lab-categories-section">
+        <h2 class="section-label">Specialization Disciplines</h2>
+        <div class="categories-grid">
+          {
+            categories.map((cat) => {
+              const catLabs = labs.filter((l) => l.data.category === cat.id);
+              return (
+                <a href={`/labs/${cat.id}`} class="card card-interactive category-card">
+                  <div class="category-header">
+                    <span class="category-icon">{cat.icon}</span>
+                    <span class="badge">{catLabs.length} {catLabs.length === 1 ? 'lab' : 'labs'}</span>
+                  </div>
+                  <h3 class="category-title">{cat.title}</h3>
+                  <p class="category-desc">{cat.desc}</p>
+                  <span class="category-link">Inspect {cat.title} &rarr;</span>
+                </a>
+              );
+            })
+          }
+        </div>
+      </section>
+
+      <!-- Interactive Playground 1: Quantum Qubit Simulator -->
+      <section class="playground-section">
+        <h2 class="section-label">Featured Interactive Lab: Quantum Simulation</h2>
+        <QuantumSimulator />
+      </section>
+
+      <!-- Interactive Playground 2: RateLimiter Benchmark Analyzer -->
+      <section class="playground-section">
+        <h2 class="section-label">Featured Interactive Lab: Throughput &amp; Allocation Profiling</h2>
+        <RateLimiterBenchmark />
+      </section>
+
+      <!-- All Labs Listing -->
+      <section class="all-labs-section">
+        <h2 class="section-label">All Published Laboratory Deep Dives</h2>
+        <div class="labs-list">
+          {
+            labs.map((lab) => {
+              const cleanSlug = lab.slug.split('/').pop();
+              return (
+                <article class="card card-interactive lab-entry-card">
+                  <div class="lab-entry-meta">
+                    <span class="badge badge-purple">{lab.data.category.toUpperCase()}</span>
+                    <span class="badge">{lab.data.status}</span>
+                  </div>
+                  <h3 class="lab-entry-title">
+                    <a href={`/labs/${lab.data.category}/${cleanSlug}`}>{lab.data.title}</a>
+                  </h3>
+                  <p class="lab-entry-desc">{lab.data.description}</p>
+                  <div class="lab-entry-footer">
+                    <div class="tech-pills">
+                      {lab.data.technologies.map((t) => (
+                        <span class="badge">{t}</span>
+                      ))}
+                    </div>
+                    <a href={`/labs/${lab.data.category}/${cleanSlug}`} class="details-link">
+                      Read Lab &rarr;
+                    </a>
+                  </div>
+                </article>
+              );
+            })
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .labs-page {
+    padding: 3.5rem 0 5rem;
+  }
+
+  .page-header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .page-title {
+    margin: 0.75rem 0 0.5rem;
+  }
+
+  .page-lead {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 780px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin: 0 0 1.5rem;
+  }
+
+  /* Categories Grid */
+  .lab-categories-section {
+    margin-bottom: 4rem;
+  }
+
+  .categories-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .categories-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 960px) {
+    .categories-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .category-card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none !important;
+  }
+
+  .category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .category-icon {
+    font-size: 1.75rem;
+    line-height: 1;
+  }
+
+  .category-title {
+    font-size: 1.2rem;
+    margin: 0 0 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .category-card:hover .category-title {
+    color: var(--accent-primary);
+  }
+
+  .category-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+    flex: 1;
+  }
+
+  .category-link {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-top: auto;
+  }
+
+  /* Playgrounds */
+  .playground-section {
+    margin-bottom: 4rem;
+  }
+
+  /* All Labs */
+  .all-labs-section {
+    margin-top: 4rem;
+  }
+
+  .labs-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .labs-list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .lab-entry-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lab-entry-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .lab-entry-title {
+    font-size: 1.25rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .lab-entry-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .lab-entry-title a:hover {
+    color: var(--accent-primary);
+  }
+
+  .lab-entry-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+    flex: 1;
+  }
+
+  .lab-entry-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .tech-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .details-link {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+  }
+</style>

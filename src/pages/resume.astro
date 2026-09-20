@@ -1,0 +1,504 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, EXPERIENCES, EDUCATION, SKILL_CATEGORIES } from '../data/site';
+---
+
+<BaseLayout title={`Résumé — ${SITE.name}`} description="Full professional résumé of Bishweshwar Shome: Senior Software Engineer with 6+ years experience in Go, Python, and distributed systems.">
+  <div class="resume-page">
+    <div class="container">
+      <!-- Top Action Bar (hidden when printed) -->
+      <div class="resume-action-bar no-print">
+        <div>
+          <span class="badge badge-active"><span class="status-dot"></span> Verified Resume Data</span>
+        </div>
+        <div class="action-buttons">
+          <button type="button" onclick="window.print()" class="btn btn-primary btn-sm">
+            🖨️ Print / Save as PDF
+          </button>
+          <a href={`mailto:${SITE.email}`} class="btn btn-secondary btn-sm">
+            ✉️ Contact Bishweshwar
+          </a>
+        </div>
+      </div>
+
+      <!-- Resume Document Sheet -->
+      <div class="resume-sheet">
+        <!-- Header -->
+        <header class="resume-header">
+          <h1 class="candidate-name">{SITE.name.toUpperCase()}</h1>
+          <div class="candidate-contact">
+            <span>Bengaluru, India</span>
+            <span class="sep">&bull;</span>
+            <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+            <span class="sep">&bull;</span>
+            <a href={SITE.social.linkedin} target="_blank" rel="noopener noreferrer">linkedin.com/in/bshome19</a>
+            <span class="sep">&bull;</span>
+            <a href={SITE.social.github} target="_blank" rel="noopener noreferrer">github.com/bshome19</a>
+          </div>
+        </header>
+
+        <!-- Professional Summary -->
+        <section class="resume-section">
+          <h2 class="section-heading">PROFESSIONAL SUMMARY</h2>
+          <p class="summary-text">
+            Senior Software Engineer with 6+ years of experience in backend and distributed systems, specializing in Go and Python.
+            Experienced in building scalable microservices and AI-driven engineering workflows, with a strong focus on reliability,
+            developer productivity, and operational efficiency. Currently exploring Rust and Quantum Computing, with an interest
+            in building practical solutions in emerging technologies.
+          </p>
+        </section>
+
+        <!-- Technical Skills -->
+        <section class="resume-section">
+          <h2 class="section-heading">TECHNICAL SKILLS</h2>
+          <div class="skills-table">
+            <div class="skill-row">
+              <span class="skill-label">Languages:</span>
+              <span class="skill-values">Go, Python, Rust, SQL, Bash</span>
+            </div>
+            <div class="skill-row">
+              <span class="skill-label">Backend:</span>
+              <span class="skill-values">gRPC, REST, Goa, Gin, Fiber, Flask</span>
+            </div>
+            <div class="skill-row">
+              <span class="skill-label">Distributed Systems &amp; Databases:</span>
+              <span class="skill-values">Microservices, MySQL, PostgreSQL, MongoDB, Redis</span>
+            </div>
+            <div class="skill-row">
+              <span class="skill-label">Cloud &amp; DevOps:</span>
+              <span class="skill-values">AWS, GCP, Docker, Terraform</span>
+            </div>
+            <div class="skill-row">
+              <span class="skill-label">AI &amp; Automation:</span>
+              <span class="skill-values">LLMs, GenAI, AI Agents, AI-assisted Development</span>
+            </div>
+            <div class="skill-row">
+              <span class="skill-label">Tools:</span>
+              <span class="skill-values">Git, GitHub, GitLab, Bitbucket, Jira, Postman</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Experience -->
+        <section class="resume-section">
+          <h2 class="section-heading">EXPERIENCE</h2>
+          <div class="experience-entries">
+            {
+              EXPERIENCES.map((exp) => (
+                <div class="entry">
+                  <div class="entry-header">
+                    <div>
+                      <h3 class="entry-role">{exp.role}</h3>
+                      <div class="entry-company">
+                        <strong>{exp.company}</strong>
+                        {exp.subcontract && <span class="entry-sub">({exp.subcontract})</span>}
+                      </div>
+                    </div>
+                    <div class="entry-meta">
+                      <span class="entry-period">{exp.period}</span>
+                      <span class="entry-loc">{exp.location}</span>
+                    </div>
+                  </div>
+
+                  <ul class="entry-bullets">
+                    {exp.highlights.map((h) => (
+                      <li>{h}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            }
+          </div>
+        </section>
+
+        <!-- Projects -->
+        <section class="resume-section">
+          <h2 class="section-heading">PROJECTS</h2>
+          <div class="projects-entries">
+            <div class="project-entry">
+              <h3 class="project-entry-title">
+                <strong>RateShield — High-Performance Distributed Rate Limiter</strong>
+              </h3>
+              <p class="project-entry-desc">
+                Engineered a zero-allocation Go rate limiter achieving sub-40ns execution, using a 64-shard in-memory engine,
+                atomic Redis Lua scripting, and multi-tier failover. Out-of-the-box middleware support for net/http, Gin, Fiber, Echo, and Chi.
+              </p>
+            </div>
+
+            <div class="project-entry">
+              <h3 class="project-entry-title">
+                <strong>Quantum Genetic Algorithm for Optimization</strong>
+              </h3>
+              <p class="project-entry-desc">
+                Implemented a Quantum Genetic Algorithm to solve the NP-hard 0-1 Knapsack optimization problem,
+                combining qubit state superposition representations with quantum rotation gate evolutionary operators.
+              </p>
+            </div>
+
+            <div class="project-entry">
+              <h3 class="project-entry-title">
+                <strong>E-commerce Web Application for Handicrafts</strong>
+              </h3>
+              <p class="project-entry-desc">
+                Orchestrated the backend of a web application, building multiple REST APIs with Go and the Gin framework,
+                utilizing MongoDB as the database with asynchronous worker notifications.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Education -->
+        <section class="resume-section">
+          <h2 class="section-heading">EDUCATION</h2>
+          <div class="edu-entries">
+            {
+              EDUCATION.map((edu) => (
+                <div class="edu-entry">
+                  <div class="edu-entry-header">
+                    <div>
+                      <h3 class="edu-entry-degree"><strong>{edu.degree}</strong></h3>
+                      <div class="edu-entry-school">{edu.institution}</div>
+                    </div>
+                    <span class="edu-entry-period">{edu.period}</span>
+                  </div>
+                  {edu.coursework && (
+                    <p class="edu-coursework">
+                      <strong>Relevant Coursework:</strong> {edu.coursework.join(', ')}.
+                    </p>
+                  )}
+                </div>
+              ))
+            }
+          </div>
+        </section>
+
+        <!-- Interests -->
+        <section class="resume-section">
+          <h2 class="section-heading">INTERESTS</h2>
+          <ul class="interests-list">
+            <li><strong>Technical:</strong> Quantum Computing, Rust, AI / Large Language Models, Low-Latency Networking.</li>
+            <li><strong>Personal:</strong> Chess, Trekking, Travel, Photography, Technical Writing on Medium.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .resume-page {
+    padding: 2.5rem 0 5rem;
+    background: var(--bg-base);
+  }
+
+  .resume-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  /* Resume Paper Sheet */
+  .resume-sheet {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 3rem 2.5rem;
+    max-width: 860px;
+    margin: 0 auto;
+    box-shadow: var(--shadow-md);
+  }
+
+  @media (max-width: 640px) {
+    .resume-sheet {
+      padding: 1.75rem 1.25rem;
+    }
+  }
+
+  /* Candidate Header */
+  .resume-header {
+    text-align: center;
+    border-bottom: 2px solid var(--border-default);
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .candidate-name {
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin: 0 0 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .candidate-contact {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+
+  .candidate-contact a {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .candidate-contact a:hover {
+    color: var(--accent-primary);
+    text-decoration: underline;
+  }
+
+  .sep {
+    color: var(--border-hover);
+  }
+
+  /* Sections */
+  .resume-section {
+    margin-bottom: 1.75rem;
+  }
+
+  .section-heading {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--accent-primary);
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 0.35rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .summary-text {
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  /* Skills Table */
+  .skills-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+  }
+
+  .skill-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  @media (min-width: 600px) {
+    .skill-row {
+      grid-template-columns: 200px 1fr;
+    }
+  }
+
+  .skill-label {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .skill-values {
+    color: var(--text-secondary);
+  }
+
+  /* Experience */
+  .experience-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .entry-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .entry-role {
+    font-size: 1.05rem;
+    margin: 0;
+    color: var(--text-primary);
+  }
+
+  .entry-company {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+  }
+
+  .entry-sub {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-left: 0.25rem;
+  }
+
+  .entry-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .entry-period {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .entry-bullets {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+  }
+
+  .entry-bullets li {
+    position: relative;
+    padding-left: 1.25rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+
+  .entry-bullets li::before {
+    content: "•";
+    position: absolute;
+    left: 0.25rem;
+    color: var(--accent-primary);
+  }
+
+  /* Projects Entries */
+  .projects-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .project-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .project-entry-title {
+    font-size: 0.95rem;
+    margin: 0;
+    color: var(--text-primary);
+  }
+
+  .project-entry-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* Education */
+  .edu-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .edu-entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .edu-entry-degree {
+    font-size: 0.95rem;
+    margin: 0;
+    color: var(--text-primary);
+  }
+
+  .edu-entry-school {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .edu-entry-period {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .edu-coursework {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 0;
+    line-height: 1.5;
+  }
+
+  /* Interests */
+  .interests-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  /* Print Styles Override for Clean Paper Layout */
+  @media print {
+    .resume-page {
+      padding: 0 !important;
+      background: #ffffff !important;
+    }
+
+    .resume-sheet {
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      max-width: 100% !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    .candidate-name, .entry-role, .entry-period, .skill-label {
+      color: #000000 !important;
+    }
+
+    .section-heading {
+      color: #000000 !important;
+      border-bottom: 1px solid #000000 !important;
+    }
+
+    .summary-text, .skill-values, .entry-bullets li, .project-entry-desc, .edu-entry-school, .edu-coursework, .interests-list {
+      color: #111111 !important;
+    }
+
+    .entry-bullets li::before {
+      color: #000000 !important;
+    }
+
+    .candidate-contact, .candidate-contact a {
+      color: #333333 !important;
+    }
+  }
+</style>

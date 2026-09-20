@@ -1,0 +1,277 @@
+---
+// RateLimiterBenchmark.astro — Interactive benchmark visualizer for RateShield
+---
+
+<div class="benchmark-widget">
+  <div class="widget-header">
+    <div class="widget-title-group">
+      <span class="badge badge-amber">BENCHMARK TOOL</span>
+      <h3 class="widget-title">Throughput &amp; Allocation Analyzer</h3>
+    </div>
+    <span class="badge badge-cyan">Intel Core i5-12450H Data</span>
+  </div>
+
+  <p class="widget-desc">
+    Simulate traffic scale to evaluate latency, CPU cycle consumption, and heap allocation pressure across rate limiting algorithms.
+  </p>
+
+  <div class="widget-grid">
+    <!-- Configuration -->
+    <div class="widget-pane">
+      <div class="param-row">
+        <label for="qps-slider" class="param-label">
+          <span>Target Throughput:</span>
+          <span id="qps-val" class="param-num">100,000 QPS</span>
+        </label>
+        <input
+          type="range"
+          id="qps-slider"
+          min="10000"
+          max="1000000"
+          step="10000"
+          value="100000"
+          class="slider"
+        />
+      </div>
+
+      <div class="alg-selector">
+        <label class="param-label"><span>Compare Algorithm:</span></label>
+        <div class="alg-options">
+          <label class="alg-opt">
+            <input type="radio" name="alg" value="token" checked />
+            <span>Token Bucket (RateShield)</span>
+          </label>
+          <label class="alg-opt">
+            <input type="radio" name="alg" value="swc" />
+            <span>Sliding Window Counter</span>
+          </label>
+          <label class="alg-opt">
+            <input type="radio" name="alg" value="swl" />
+            <span>Sliding Window Log (Standard)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calculated Metrics Output -->
+    <div class="widget-pane results-pane">
+      <div class="stat-card">
+        <span class="stat-name">Execution Latency</span>
+        <span id="stat-latency" class="stat-value text-cyan">34.84 ns</span>
+        <span class="stat-detail">Per evaluation decision</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-name">Heap Memory Allocated</span>
+        <span id="stat-alloc" class="stat-value text-emerald">0 B/sec</span>
+        <span class="stat-detail" id="stat-alloc-sub">Zero GC pressure</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-name">CPU Time Spent Limiting</span>
+        <span id="stat-cpu" class="stat-value text-amber">3.48 ms/sec</span>
+        <span class="stat-detail">&lt;0.35% of a single CPU core</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .benchmark-widget {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin: 2rem 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .widget-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .widget-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .widget-title {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .widget-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+  }
+
+  .widget-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .widget-grid {
+      grid-template-columns: 1.1fr 1fr;
+    }
+  }
+
+  .widget-pane {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .param-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .param-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .param-num {
+    font-family: var(--font-mono);
+    color: var(--accent-amber);
+    font-weight: 600;
+  }
+
+  .slider {
+    width: 100%;
+    accent-color: var(--accent-amber);
+    cursor: pointer;
+  }
+
+  .alg-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .alg-opt {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .alg-opt input {
+    accent-color: var(--accent-primary);
+  }
+
+  .results-pane {
+    gap: 0.85rem;
+  }
+
+  .stat-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .stat-name {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+
+  .stat-detail {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .text-cyan { color: var(--accent-cyan); }
+  .text-emerald { color: var(--accent-emerald); }
+  .text-amber { color: var(--accent-amber); }
+</style>
+
+<script is:inline>
+  (() => {
+    const qpsSlider = document.getElementById('qps-slider');
+    const qpsVal = document.getElementById('qps-val');
+    const statLatency = document.getElementById('stat-latency');
+    const statAlloc = document.getElementById('stat-alloc');
+    const statAllocSub = document.getElementById('stat-alloc-sub');
+    const statCpu = document.getElementById('stat-cpu');
+    const algInputs = document.querySelectorAll('input[name="alg"]');
+
+    const ALGORITHMS = {
+      token: { name: 'Token Bucket', ns: 34.84, bytes: 0, allocs: 0 },
+      swc: { name: 'Sliding Window Counter', ns: 38.16, bytes: 0, allocs: 0 },
+      swl: { name: 'Sliding Window Log', ns: 175.70, bytes: 48, allocs: 1 },
+    };
+
+    function update() {
+      const qps = parseInt(qpsSlider?.value || '100000', 10);
+      let selectedAlg = 'token';
+      algInputs.forEach((input) => {
+        if (input.checked) selectedAlg = input.value;
+      });
+
+      const profile = ALGORITHMS[selectedAlg];
+      if (qpsVal) qpsVal.textContent = `${qps.toLocaleString()} QPS`;
+      if (statLatency) statLatency.textContent = `${profile.ns.toFixed(2)} ns`;
+
+      const totalBytesPerSec = qps * profile.bytes;
+      const totalCpuNsPerSec = qps * profile.ns;
+      const totalCpuMsPerSec = totalCpuNsPerSec / 1000000;
+      const corePct = (totalCpuMsPerSec / 1000) * 100;
+
+      if (statAlloc) {
+        if (totalBytesPerSec === 0) {
+          statAlloc.textContent = '0 B/sec';
+          statAlloc.className = 'stat-value text-emerald';
+          if (statAllocSub) statAllocSub.textContent = 'Zero GC pressure (0 heap allocs)';
+        } else {
+          const mb = (totalBytesPerSec / (1024 * 1024)).toFixed(2);
+          statAlloc.textContent = `${mb} MB/sec`;
+          statAlloc.className = 'stat-value text-amber';
+          if (statAllocSub) statAllocSub.textContent = `${(qps * profile.allocs).toLocaleString()} heap allocs/sec (causes GC cycles)`;
+        }
+      }
+
+      if (statCpu) {
+        statCpu.textContent = `${totalCpuMsPerSec.toFixed(2)} ms/sec`;
+        const sub = statCpu.nextElementSibling;
+        if (sub) sub.textContent = `${corePct.toFixed(2)}% of a single CPU core`;
+      }
+    }
+
+    qpsSlider?.addEventListener('input', update);
+    algInputs.forEach((input) => input.addEventListener('change', update));
+
+    update();
+  })();
+</script>

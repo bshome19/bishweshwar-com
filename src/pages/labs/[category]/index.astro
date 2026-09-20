@@ -1,0 +1,231 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const categories = ['go', 'rust', 'quantum', 'cryptography', 'distributed-systems', 'ai'];
+  const allLabs = await getCollection('labs');
+
+  return categories.map((category) => {
+    const categoryLabs = allLabs.filter((lab) => lab.data.category === category);
+    return {
+      params: { category },
+      props: {
+        category,
+        labs: categoryLabs,
+      },
+    };
+  });
+}
+
+const { category, labs } = Astro.props;
+
+const categoryTitles: Record<string, string> = {
+  go: 'Go & High Concurrency',
+  rust: 'Rust & Systems Programming',
+  quantum: 'Quantum Computing',
+  cryptography: 'Applied Cryptography',
+  'distributed-systems': 'Distributed Systems',
+  ai: 'AI & Engineering Productivity',
+};
+
+const categoryDescriptions: Record<string, string> = {
+  go: 'Experiments in zero-allocation memory layouts, 64-shard mutex partitioning, and low-latency API gateway architectures.',
+  rust: 'Explorations in memory safety without garbage collection, borrow checker semantics, and lock-free thread synchronization.',
+  quantum: 'Simulations of qubit superposition states, unitary rotation gate operators, and quantum genetic algorithms for NP-hard optimization.',
+  cryptography: 'Audited implementations and performance evaluations of AEAD ciphers (AES-GCM, ChaCha20-Poly1305) and key derivation.',
+  'distributed-systems': 'Architectures for resilient multi-tier failover, atomic Redis Lua clustering, consensus, and network partition recovery.',
+  ai: 'Autonomous LLM-driven developer workflows for MR diff coverage analysis, AST parsing, and closed-loop unit test generation.',
+};
+
+const title = categoryTitles[category] || category.toUpperCase();
+const description = categoryDescriptions[category] || `Laboratory experiments in ${category}.`;
+---
+
+<BaseLayout title={`${title} Lab — Bishweshwar Shome`} description={description}>
+  <div class="category-labs-page">
+    <div class="container">
+      <!-- Breadcrumbs -->
+      <nav class="breadcrumbs" aria-label="Breadcrumbs">
+        <a href="/">Home</a>
+        <span class="breadcrumb-sep">/</span>
+        <a href="/labs">Labs</a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">{category}</span>
+      </nav>
+
+      <header class="page-header">
+        <span class="badge badge-purple">{category.toUpperCase()} LABORATORY</span>
+        <h1 class="page-title">{title}</h1>
+        <p class="page-lead">{description}</p>
+      </header>
+
+      <div class="labs-grid">
+        {
+          labs.map((lab) => {
+            const cleanSlug = lab.slug.split('/').pop();
+            return (
+              <article class="card card-interactive lab-card">
+                <div class="lab-card-header">
+                  <span class="badge badge-purple">{lab.data.category.toUpperCase()}</span>
+                  <span class="badge">{lab.data.status}</span>
+                </div>
+
+                <h2 class="lab-title">
+                  <a href={`/labs/${category}/${cleanSlug}`}>{lab.data.title}</a>
+                </h2>
+
+                <p class="lab-desc">{lab.data.description}</p>
+
+                <div class="lab-footer">
+                  <div class="tech-pills">
+                    {lab.data.technologies.map((t) => (
+                      <span class="badge">{t}</span>
+                    ))}
+                  </div>
+                  <a href={`/labs/${category}/${cleanSlug}`} class="details-link">
+                    Open Lab &rarr;
+                  </a>
+                </div>
+              </article>
+            );
+          })
+        }
+      </div>
+
+      <div class="back-link">
+        <a href="/labs" class="btn btn-secondary btn-sm">
+          &larr; Back to all laboratories
+        </a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .category-labs-page {
+    padding: 3.5rem 0 5rem;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .breadcrumbs a {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--accent-primary);
+  }
+
+  .breadcrumb-sep {
+    color: var(--border-default);
+  }
+
+  .breadcrumb-current {
+    color: var(--text-primary);
+    text-transform: capitalize;
+  }
+
+  .page-header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .page-title {
+    margin: 0.75rem 0 0.5rem;
+  }
+
+  .page-lead {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 780px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .labs-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  @media (min-width: 768px) {
+    .labs-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .lab-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lab-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .lab-title {
+    font-size: 1.35rem;
+    margin: 0 0 0.75rem;
+    line-height: 1.35;
+  }
+
+  .lab-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .lab-title a:hover {
+    color: var(--accent-primary);
+  }
+
+  .lab-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+    flex: 1;
+  }
+
+  .lab-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .tech-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .details-link {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+  }
+
+  .back-link {
+    margin-top: 2rem;
+  }
+</style>

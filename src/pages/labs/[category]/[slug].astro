@@ -1,0 +1,40 @@
+---
+import ArticleLayout from '../../../layouts/ArticleLayout.astro';
+import QuantumSimulator from '../../../components/QuantumSimulator.astro';
+import RateLimiterBenchmark from '../../../components/RateLimiterBenchmark.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const allLabs = await getCollection('labs');
+
+  return allLabs.map((lab) => {
+    const slug = lab.slug.split('/').pop();
+    return {
+      params: {
+        category: lab.data.category,
+        slug: slug,
+      },
+      props: { lab },
+    };
+  });
+}
+
+const { lab } = Astro.props;
+const { Content } = await lab.render();
+const cleanSlug = lab.slug.split('/').pop();
+---
+
+<ArticleLayout
+  title={lab.data.title}
+  description={lab.data.description}
+  category={lab.data.category}
+  tags={lab.data.technologies}
+  section="Labs"
+  sectionHref={`/labs/${lab.data.category}`}
+>
+  <!-- Optional Interactive Simulators based on lab slug -->
+  {cleanSlug === 'qga-knapsack' && <QuantumSimulator />}
+  {cleanSlug === 'rateshield-engine' && <RateLimiterBenchmark />}
+
+  <Content />
+</ArticleLayout>

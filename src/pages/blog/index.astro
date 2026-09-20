@@ -1,0 +1,246 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../data/site';
+import { getCollection } from 'astro:content';
+
+const posts = await getCollection('blog', ({ data }) => !data.draft);
+const sortedPosts = posts.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+
+const categories = ['All', ...new Set(posts.map((p) => p.data.category))];
+---
+
+<BaseLayout title={`Engineering Blog — ${SITE.name}`} description="Technical writing and architectural analysis by Bishweshwar Shome on Go, distributed systems, quantum computing, and rate limiting.">
+  <div class="blog-index-page">
+    <div class="container">
+      <header class="page-header">
+        <span class="badge badge-amber">PUBLICATIONS</span>
+        <h1 class="page-title">Technical Writing</h1>
+        <p class="page-lead">
+          Articles and deep dives on low-latency systems, zero-allocation Go engineering,
+          distributed concurrency, and quantum optimization. Also published on Medium &amp; Dev Genius.
+        </p>
+      </header>
+
+      <!-- Category Filter Pills -->
+      <div class="filter-container">
+        <div class="filter-pills" role="tablist">
+          {
+            categories.map((cat, idx) => (
+              <button
+                type="button"
+                class:list={['filter-btn', { active: idx === 0 }]}
+                data-category={cat}
+                role="tab"
+                aria-selected={idx === 0 ? 'true' : 'false'}
+              >
+                {cat.toUpperCase()}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- Articles Grid -->
+      <div class="articles-list" id="articles-list">
+        {
+          sortedPosts.map((post) => {
+            const formattedDate = new Intl.DateTimeFormat('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            }).format(post.data.pubDate);
+
+            return (
+              <article class="card card-interactive post-card" data-category={post.data.category}>
+                <div class="post-meta">
+                  <span class="badge badge-cyan">{post.data.category.toUpperCase()}</span>
+                  <time datetime={post.data.pubDate.toISOString()} class="post-date">
+                    {formattedDate}
+                  </time>
+                  {post.data.readingTime && <span class="post-read">{post.data.readingTime}</span>}
+                  {post.data.externalUrl && (
+                    <span class="badge badge-amber">Dev Genius / Medium</span>
+                  )}
+                </div>
+
+                <h2 class="post-title">
+                  <a href={`/blog/${post.slug}`}>{post.data.title}</a>
+                </h2>
+
+                <p class="post-desc">{post.data.description}</p>
+
+                <div class="post-footer">
+                  <div class="tech-pills">
+                    {post.data.tags.map((t) => (
+                      <span class="badge">#{t}</span>
+                    ))}
+                  </div>
+
+                  <a href={`/blog/${post.slug}`} class="read-link">
+                    Read Article &rarr;
+                  </a>
+                </div>
+              </article>
+            );
+          })
+        }
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .blog-index-page {
+    padding: 3.5rem 0 5rem;
+  }
+
+  .page-header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 2rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .page-title {
+    margin: 0.75rem 0 0.5rem;
+  }
+
+  .page-lead {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 780px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .filter-container {
+    margin-bottom: 2.5rem;
+  }
+
+  .filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .filter-btn {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 0.4rem 0.85rem;
+    border-radius: var(--radius-full);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .filter-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+  }
+
+  .filter-btn.active {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    border-color: var(--accent-primary);
+    font-weight: 600;
+  }
+
+  .articles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .post-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .post-title {
+    font-size: 1.35rem;
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  .post-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .post-title a:hover {
+    color: var(--accent-primary);
+  }
+
+  .post-desc {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .post-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 0.5rem;
+  }
+
+  .tech-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .read-link {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const cards = document.querySelectorAll('.post-card');
+
+    filterButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach((b) => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+
+        const cat = btn.getAttribute('data-category');
+
+        cards.forEach((card) => {
+          const cardCat = card.getAttribute('data-category');
+          if (cat === 'All' || cardCat === cat) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+  })();
+</script>
