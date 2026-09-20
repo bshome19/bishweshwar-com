@@ -13,11 +13,11 @@ const categories = ['All', ...new Set(posts.map((p) => p.data.category))];
   <div class="blog-index-page">
     <div class="container">
       <header class="page-header">
-        <span class="badge badge-amber">PUBLICATIONS</span>
-        <h1 class="page-title">Technical Writing</h1>
+        <span class="badge badge-amber">BLOG &amp; ARTICLES</span>
+        <h1 class="page-title">Technical Writing &amp; Blog</h1>
         <p class="page-lead">
-          Articles and deep dives on low-latency systems, zero-allocation Go engineering,
-          distributed concurrency, and quantum optimization. Also published on Medium &amp; Dev Genius.
+          Engineering deep dives, tutorials, and architecture guides on Go, distributed systems, and backend design,
+          including tutorials published in Dev Genius on Medium.
         </p>
       </header>
 
@@ -59,7 +59,7 @@ const categories = ['All', ...new Set(posts.map((p) => p.data.category))];
                   </time>
                   {post.data.readingTime && <span class="post-read">{post.data.readingTime}</span>}
                   {post.data.externalUrl && (
-                    <span class="badge badge-amber">Dev Genius / Medium</span>
+                    <span class="badge badge-amber">Published in Dev Genius (Medium)</span>
                   )}
                 </div>
 

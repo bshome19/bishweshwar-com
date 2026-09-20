@@ -5,8 +5,7 @@ pubDate: 2024-04-10
 category: "go"
 tags: ["go", "redis", "concurrency", "distributed-systems", "performance"]
 featured: true
-canonicalUrl: "https://medium.com/@bshome19/28-million-decisions-per-second-zero-allocations-one-rate-limiter"
-externalUrl: "https://medium.com/@bshome19"
+canonicalUrl: "https://bishweshwar.com/blog/28-million-decisions-per-second-rate-limiter"
 readingTime: "7 min read"
 ---
 

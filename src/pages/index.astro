@@ -19,13 +19,13 @@ const featuredLabs = allLabs
   .sort((a, b) => a.data.order - b.data.order);
 ---
 
-<BaseLayout title={`${SITE.name} — Senior Software Engineer`}>
+<BaseLayout title="Bishweshwar Shome | Senior Software Engineer & Golang Developer">
   <!-- HERO SECTION -->
   <section class="hero-section">
     <div class="container hero-inner">
       <div class="hero-badge-row">
         <span class="badge badge-active">
-          <span class="status-dot"></span> Available for Senior / Principal Engineering Roles
+          <span class="status-dot"></span> Available for SDE III / Senior Engineering Roles
         </span>
         <span class="badge badge-cyan">6+ Years Backend &amp; Distributed Systems</span>
       </div>
@@ -33,11 +33,12 @@ const featuredLabs = allLabs
       <h1 class="hero-title">
         Bishweshwar Shome
       </h1>
+      <p class="hero-role-title">Senior Software Engineer &amp; Golang Developer | SDE III</p>
 
       <p class="hero-tagline">
-        Senior Software Engineer specializing in <strong>Go</strong>, <strong>distributed systems</strong>,
-        and <strong>high-throughput microservices</strong>. Experienced in building automated AI-driven engineering workflows
-        and optimizing critical latency paths. Currently exploring <strong>Rust</strong> and <strong>Quantum Computing</strong>.
+        Senior Software Engineer (SDE III) specializing in <strong>Go (Golang)</strong>, <strong>distributed systems</strong>,
+        and <strong>high-throughput microservices</strong>. Experienced in building automated AI-driven engineering workflows,
+        large-scale cloud infrastructure, and low-latency critical paths. Currently exploring <strong>Rust</strong> and <strong>Quantum Computing</strong>.
       </p>
 
       <div class="hero-cta-group">
@@ -317,6 +318,14 @@ const featuredLabs = allLabs
     font-weight: 700;
     line-height: 1.15;
     letter-spacing: -0.03em;
+  }
+
+  .hero-role-title {
+    font-size: clamp(1.15rem, 2.5vw, 1.5rem);
+    font-weight: 600;
+    color: var(--accent-cyan);
+    letter-spacing: -0.01em;
+    margin-top: -0.5rem;
   }
 
   .hero-tagline {

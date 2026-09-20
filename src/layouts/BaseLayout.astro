@@ -24,9 +24,25 @@ const personSchema = {
   '@context': 'https://schema.org',
   '@type': 'Person',
   name: SITE.name,
+  alternateName: [
+    'Bishweshwar',
+    'Bishweshwar Shome',
+    'bshome19',
+    'BISHWESHWAR SHOME',
+    'BISHWESHWAR',
+    'Bishweshwar Golang',
+    'Bishweshwar Software Engineer',
+    'Bishweshwar Go Developer',
+  ],
   url: SITE.url,
   image: image,
-  jobTitle: 'Senior Software Engineer',
+  jobTitle: [
+    'Senior Software Engineer',
+    'SDE III',
+    'Golang Developer',
+    'Backend Engineer',
+  ],
+  description: SITE.description,
   worksFor: {
     '@type': 'Organization',
     name: 'F5 Networks Innovation Private Limited',
@@ -40,14 +56,39 @@ const personSchema = {
     '@type': 'EducationalOrganization',
     name: 'Visva-Bharati University',
   },
+  knowsAbout: [
+    'Go',
+    'Golang',
+    'Distributed Systems',
+    'Microservices',
+    'Python',
+    'Rust',
+    'Quantum Computing',
+    'gRPC',
+    'Redis',
+    'Docker',
+    'Terraform',
+    'AWS',
+    'Cloud Networking',
+  ],
+  email: `mailto:${SITE.email}`,
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Bengaluru',
+    addressCountry: 'IN',
+  },
 };
 
 const websiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: SITE.name,
+  name: `${SITE.name} — Portfolio & Engineering Blog`,
   url: SITE.url,
   description: SITE.description,
+  author: {
+    '@type': 'Person',
+    name: SITE.name,
+  },
 };
 ---
 
@@ -58,6 +99,12 @@ const websiteSchema = {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="author" content="Bishweshwar Shome" />
+    <meta
+      name="keywords"
+      content="Bishweshwar, Bishweshwar Shome, bishweshwar, bishweshwar shome, BISHWESHWAR, BISHWESHWAR SHOME, bshome19, bshome, bishweshwar software engineer, bishweshwar golang, bishweshwar go developer, bishweshwar sde iii, bishweshwar f5, bishweshwar ibm, bishweshwar bangalore, bishweshwar bengaluru, Senior Software Engineer, SDE III, Golang Developer, Go Developer, Distributed Systems, Microservices, F5 Networks, IBM, Bengaluru"
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href={canonical} />
 
     <!-- Open Graph -->
