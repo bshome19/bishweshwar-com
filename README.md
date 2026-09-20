@@ -49,7 +49,7 @@ bishweshwar-com/
 │   │   ├── contact.astro       # Accessible contact form with anti-spam
 │   │   ├── experience.astro    # Career history timeline
 │   │   ├── index.astro         # Engineering portfolio homepage
-│   │   ├── resume.astro        # Web résumé with print-to-PDF styles
+│   │   ├── resume.astro        # Web resume with print-to-PDF styles
 │   │   ├── blog/               # Article catalog & dynamic slugs
 │   │   ├── labs/               # Discipline categories & deep dives
 │   │   ├── projects/           # Project gallery & case study pages
@@ -59,6 +59,7 @@ bishweshwar-com/
 ├── astro.config.mjs
 ├── package.json
 ├── tsconfig.json
+├── LICENSE
 └── README.md
 ```
 
@@ -83,7 +84,7 @@ Open [http://localhost:4321](http://localhost:4321) in your browser.
 
 ### 4. Type Check & Production Build
 ```bash
-npm run check  # Runs tsc --noEmit
+npm run check  # Runs astro sync && tsc --noEmit
 npm run build  # Builds 100% static HTML output to dist/
 ```
 
@@ -103,10 +104,11 @@ The website compiles to 100% static assets inside `dist/`.
    - **Framework preset**: `Astro`
    - **Build command**: `npm run build`
    - **Build output directory**: `dist`
-   - **Node.js version**: `18.19` or `20+` (set environment variable `NODE_VERSION = 20` or `18.19.1`).
+   - **Node.js version**: `20` (auto-detected via `.nvmrc`).
 
 ---
 
-## 📄 License
+## 📄 License & Rights
 
-Distributed under the MIT License.
+- **Source Code**: Software architecture, components, and website code licensed under the [MIT License](LICENSE).
+- **Content & Personal Data**: All written articles, research notes, curriculum vitae / resume data, and personal branding &copy; 2026 Bishweshwar Shome. All rights reserved.

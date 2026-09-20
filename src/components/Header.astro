@@ -13,7 +13,7 @@ const navItems = [
   { href: '/projects', label: 'Projects' },
   { href: '/labs', label: 'Labs' },
   { href: '/blog', label: 'Blog' },
-  { href: '/resume', label: 'Résumé' },
+  { href: '/resume', label: 'Resume' },
   { href: '/contact', label: 'Contact' },
 ];
 
@@ -98,7 +98,7 @@ function isActive(href: string): boolean {
 
   <!-- Mobile Navigation Drawer -->
   <div id="mobile-nav" class="mobile-nav" aria-hidden="true">
-    <div class="container mobile-nav-inner">
+    <div class="container">
       <ul class="mobile-nav-list">
         {
           navItems.map((item) => (
@@ -123,15 +123,24 @@ function isActive(href: string): boolean {
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(10, 12, 16, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border-subtle);
-    transition: background var(--transition-fast), border-color var(--transition-fast);
+    background: var(--bg-header);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--header-border);
+    box-shadow: var(--header-shadow);
+    transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
   }
 
-  [data-theme="light"] .site-header {
-    background: rgba(248, 250, 252, 0.85);
+  :global([data-theme="light"]) .site-header {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 6px -1px rgba(0, 0, 0, 0.02) !important;
+  }
+
+  :global([data-theme="dark"]) .site-header {
+    background: rgba(10, 12, 16, 0.88) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
   }
 
   .header-inner {
@@ -145,26 +154,33 @@ function isActive(href: string): boolean {
     display: inline-flex;
     align-items: center;
     font-family: var(--font-mono);
-    font-size: 1.05rem;
-    font-weight: 600;
+    font-size: 1.1rem;
+    font-weight: 700;
     color: var(--text-primary);
     text-decoration: none !important;
     letter-spacing: -0.02em;
+    transition: opacity var(--transition-fast);
   }
 
   .brand-prompt {
     color: var(--accent-primary);
     margin-right: 0.35rem;
+    font-weight: 800;
+    text-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  }
+
+  .brand-name {
+    color: var(--text-primary);
     font-weight: 700;
   }
 
   .brand-domain {
     color: var(--text-muted);
-    font-weight: 400;
+    font-weight: 500;
   }
 
-  .site-brand:hover .brand-name {
-    color: var(--accent-primary);
+  .site-brand:hover {
+    opacity: 0.85;
   }
 
   /* Desktop Nav */
@@ -181,29 +197,32 @@ function isActive(href: string): boolean {
   .nav-list {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.35rem;
     list-style: none;
   }
 
   .nav-link {
-    display: inline-block;
-    padding: 0.45rem 0.8rem;
-    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.9rem;
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--header-nav-text);
     border-radius: var(--radius-sm);
     text-decoration: none !important;
-    transition: color var(--transition-fast), background var(--transition-fast);
+    border: 1px solid transparent;
+    transition: all var(--transition-fast);
   }
 
   .nav-link:hover {
-    color: var(--text-primary);
+    color: var(--header-nav-hover);
     background: var(--bg-surface-hover);
   }
 
   .nav-link.active {
-    color: var(--accent-primary);
-    background: rgba(56, 189, 248, 0.08);
+    color: var(--header-nav-active);
+    background: var(--header-nav-active-bg);
+    border-color: var(--header-nav-active-border);
     font-weight: 600;
   }
 
