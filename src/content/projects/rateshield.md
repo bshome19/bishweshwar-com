@@ -7,7 +7,7 @@ github: "https://github.com/bshome19/rateshield"
 featured: true
 category: "Distributed Systems"
 metrics: [
-  "Sub-40ns execution time (34.84ns Token Bucket)",
+  "Sub-40ns execution time (~33ns Fixed Window / SWC multi-key)",
   "0 B/op allocations on hot path",
   "64-shard FNV-1a mutex engine",
   "Atomic single-RTT Redis Lua scripts",
@@ -18,7 +18,7 @@ order: 1
 
 ## Overview
 
-**RateShield** is an open-source, production-grade distributed rate limiting library for Go. It is architected from the ground up for high-throughput, low-latency API gateways and microservices that cannot tolerate garbage collection pauses or lock contention under heavy concurrency.
+**RateShield** is an open-source, production-grade distributed rate limiting library for Go (Go 1.24+). It is architected from the ground up for high-throughput, low-latency API gateways and microservices that cannot tolerate garbage collection pauses or lock contention under heavy concurrency.
 
 ## Architecture
 
@@ -57,17 +57,18 @@ RateShield utilizes the **Strategy Pattern** combined with **Dependency Inversio
 
 ## Key Technical Innovations
 
-1. **64-Shard Mutex Memory Engine**: Partitions the hash space into 64 distinct lock domains using 64-bit FNV-1a hashing, eliminating cross-core lock contention.
-2. **Zero-Allocation Execution (`0 B/op`)**: Exploits value receivers and stack allocation semantics to ensure zero heap pressure during rate evaluations.
-3. **Atomic Distributed Redis Lua**: Single round-trip evaluation guarantees race-condition-free operation across distributed Kubernetes replicas.
+1. **64-Shard Mutex Memory Engine**: Partitions the hash space into 64 distinct lock domains using bitwise indexing (`hash & (numShards - 1)`) with `[48]byte` cache-line padding to prevent false sharing and eliminate cross-core lock contention.
+2. **Zero-Allocation Execution (`0 B/op`)**: Exploits value receivers (`AllowFast` / `AllowNFast`) and stack allocation semantics to ensure zero heap allocations during rate evaluations.
+3. **Atomic Distributed Redis Lua**: Single round-trip evaluation with full auxiliary key cleanup via SCAN on reset, guaranteeing race-condition-free operation across distributed Kubernetes replicas.
 4. **Resilient Failover**: Automatically degrades from Redis cluster to localized sharded memory if network partitions occur.
-5. **Modern IETF Headers**: Supports modern `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` standard headers alongside legacy `X-RateLimit-*`.
+5. **Context Cancellation Guards**: All memory store evaluation methods verify `ctx.Err()` prior to acquiring shard locks, preventing goroutine pile-up on cancelled requests.
+6. **Modern IETF Headers**: Supports modern `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` standard headers alongside legacy `X-RateLimit-*`.
 
 ## Benchmark Details
 
 Evaluated on 12th Gen Intel(R) Core(TM) i5-12450H (`go test -bench=. -benchmem ./algorithms`):
 
-- **Token Bucket**: 34.84 ns/op | 0 B/op | 0 allocs
-- **Fixed Window**: 35.61 ns/op | 0 B/op | 0 allocs
-- **Sliding Window Counter**: 38.16 ns/op | 0 B/op | 0 allocs
-- **Sliding Window Log**: 175.70 ns/op | 48 B/op | 1 alloc
+- **Token Bucket (Multi-Key)**: ~36 ns/op | 0 B/op | 0 allocs
+- **Fixed Window (Multi-Key)**: ~33 ns/op | 0 B/op | 0 allocs
+- **Sliding Window Counter (Multi-Key)**: ~33 ns/op | 0 B/op | 0 allocs
+- **Sliding Window Log (AllowFast)**: ~1,456 ns/op | 0 B/op | 0 allocs

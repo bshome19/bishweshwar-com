@@ -47,7 +47,7 @@
           </label>
           <label class="alg-opt">
             <input type="radio" name="alg" value="swl" />
-            <span>Sliding Window Log (Standard)</span>
+            <span>Sliding Window Log (AllowFast)</span>
           </label>
         </div>
       </div>
@@ -57,7 +57,7 @@
     <div class="widget-pane results-pane">
       <div class="stat-card">
         <span class="stat-name">Execution Latency</span>
-        <span id="stat-latency" class="stat-value text-cyan">34.84 ns</span>
+        <span id="stat-latency" class="stat-value text-cyan">36.58 ns</span>
         <span class="stat-detail">Per evaluation decision</span>
       </div>
 
@@ -228,9 +228,9 @@
     const algInputs = document.querySelectorAll('input[name="alg"]');
 
     const ALGORITHMS = {
-      token: { name: 'Token Bucket', ns: 34.84, bytes: 0, allocs: 0 },
-      swc: { name: 'Sliding Window Counter', ns: 38.16, bytes: 0, allocs: 0 },
-      swl: { name: 'Sliding Window Log', ns: 175.70, bytes: 48, allocs: 1 },
+      token: { name: 'Token Bucket', ns: 36.58, bytes: 0, allocs: 0 },
+      swc: { name: 'Sliding Window Counter', ns: 32.62, bytes: 0, allocs: 0 },
+      swl: { name: 'Sliding Window Log', ns: 1456, bytes: 0, allocs: 0 },
     };
 
     function update() {
