@@ -1,0 +1,189 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../data/site';
+import HttpRequestSimulator from '../../components/learn/simulators/HttpRequestSimulator.astro';
+import CacheSimulator from '../../components/learn/simulators/CacheSimulator.astro';
+import ConsistentHashingSimulator from '../../components/learn/simulators/ConsistentHashingSimulator.astro';
+import RateLimiterSimulator from '../../components/learn/simulators/RateLimiterSimulator.astro';
+import QueueBackpressureSimulator from '../../components/learn/simulators/QueueBackpressureSimulator.astro';
+import LruCachePlayground from '../../components/learn/simulators/LruCachePlayground.astro';
+import CapacityCalculator from '../../components/learn/simulators/CapacityCalculator.astro';
+import ArchitectureTradeoffGame from '../../components/learn/simulators/ArchitectureTradeoffGame.astro';
+---
+
+<BaseLayout
+  title={`Interactive Architecture Playground — ${SITE.name}`}
+  description="Hands-on interactive engineering simulators for System Design: HTTP retries, cache hit rates, consistent hashing, rate limiters, queue backpressure, and capacity estimation."
+>
+  <div class="playground-page">
+    <div class="container">
+      <!-- Breadcrumb -->
+      <nav class="learn-breadcrumbs" aria-label="Breadcrumbs">
+        <a href="/" class="breadcrumb-link">Home</a>
+        <span class="breadcrumb-sep">/</span>
+        <a href="/learn" class="breadcrumb-link">Learn</a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">Playground</span>
+      </nav>
+
+      <header class="playground-header">
+        <span class="badge badge-amber">INTERACTIVE LABS</span>
+        <h1 class="playground-title">Interactive System Design Playground</h1>
+        <p class="playground-lead">
+          Architecture is learned by observing system behavior under stress. Interact with these 8 deterministic simulators to develop genuine intuition for network latency, cache evictions, consistent hashing, rate limiting, and capacity sizing.
+        </p>
+
+        <!-- Quick Jump Navigation Tabs -->
+        <div class="sim-jump-tabs">
+          <a href="#http-sim" class="tab-pill">⚡ HTTP Retries</a>
+          <a href="#cache-sim" class="tab-pill">💾 Cache Eviction</a>
+          <a href="#hashing-sim" class="tab-pill">🌐 Consistent Hashing</a>
+          <a href="#ratelimit-sim" class="tab-pill">🛑 Rate Limiting</a>
+          <a href="#queue-sim" class="tab-pill">📬 Queue Backpressure</a>
+          <a href="#lru-sim" class="tab-pill">🧩 LRU Pointers</a>
+          <a href="#capacity-sim" class="tab-pill">📐 Capacity Calculator</a>
+          <a href="#tradeoff-sim" class="tab-pill">⚖️ PACELC Trade-Offs</a>
+        </div>
+      </header>
+
+      <!-- 1. HTTP Simulator -->
+      <section id="http-sim" class="sim-section">
+        <HttpRequestSimulator />
+      </section>
+
+      <!-- 2. Cache Simulator -->
+      <section id="cache-sim" class="sim-section">
+        <CacheSimulator />
+      </section>
+
+      <!-- 3. Consistent Hashing -->
+      <section id="hashing-sim" class="sim-section">
+        <ConsistentHashingSimulator />
+      </section>
+
+      <!-- 4. Rate Limiter -->
+      <section id="ratelimit-sim" class="sim-section">
+        <RateLimiterSimulator />
+      </section>
+
+      <!-- 5. Queue Backpressure -->
+      <section id="queue-sim" class="sim-section">
+        <QueueBackpressureSimulator />
+      </section>
+
+      <!-- 6. LRU Playground -->
+      <section id="lru-sim" class="sim-section">
+        <LruCachePlayground />
+      </section>
+
+      <!-- 7. Capacity Calculator -->
+      <section id="capacity-sim" class="sim-section">
+        <CapacityCalculator />
+      </section>
+
+      <!-- 8. Trade-Off Game -->
+      <section id="tradeoff-sim" class="sim-section">
+        <ArchitectureTradeoffGame />
+      </section>
+
+      <footer class="playground-footer">
+        <a href="/learn" class="btn btn-secondary btn-sm">
+          &larr; Back to Learn Hub
+        </a>
+        <a href="/learn/foundations" class="btn btn-primary btn-sm">
+          Start with Foundations Track &rarr;
+        </a>
+      </footer>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .playground-page {
+    padding: 3rem 0 5rem;
+  }
+
+  .learn-breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .breadcrumb-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .breadcrumb-link:hover {
+    color: var(--accent-primary);
+  }
+
+  .breadcrumb-sep {
+    color: var(--border-default);
+  }
+
+  .breadcrumb-current {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .playground-header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .playground-title {
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    letter-spacing: -0.025em;
+    margin: 0.75rem 0;
+  }
+
+  .playground-lead {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    max-width: 800px;
+    line-height: 1.65;
+    margin-bottom: 1.75rem;
+  }
+
+  .sim-jump-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tab-pill {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  }
+
+  .tab-pill:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-elevated);
+  }
+
+  .sim-section {
+    scroll-margin-top: 5rem;
+  }
+
+  .playground-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+</style>

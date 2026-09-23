@@ -1,0 +1,87 @@
+---
+import LearnLayout from '../../../layouts/LearnLayout.astro';
+import { getCollection } from 'astro:content';
+
+// Simulators
+import HttpRequestSimulator from '../../../components/learn/simulators/HttpRequestSimulator.astro';
+import CacheSimulator from '../../../components/learn/simulators/CacheSimulator.astro';
+import ConsistentHashingSimulator from '../../../components/learn/simulators/ConsistentHashingSimulator.astro';
+import RateLimiterSimulator from '../../../components/learn/simulators/RateLimiterSimulator.astro';
+import QueueBackpressureSimulator from '../../../components/learn/simulators/QueueBackpressureSimulator.astro';
+import LruCachePlayground from '../../../components/learn/simulators/LruCachePlayground.astro';
+import CapacityCalculator from '../../../components/learn/simulators/CapacityCalculator.astro';
+import ArchitectureTradeoffGame from '../../../components/learn/simulators/ArchitectureTradeoffGame.astro';
+
+export async function getStaticPaths() {
+  const allLessons = await getCollection('learn', ({ data }) => !data.draft);
+
+  return allLessons.map((lesson) => {
+    const cleanSlug = lesson.slug.split('/').pop()?.replace(/^\d+-/, '') || lesson.slug;
+
+    // Find siblings in same track for pagination
+    const trackLessons = allLessons
+      .filter((l) => l.data.track === lesson.data.track)
+      .sort((a, b) => (a.data.order || 0) - (b.data.order || 0));
+
+    const curIdx = trackLessons.findIndex((l) => l.id === lesson.id);
+    const prev = curIdx > 0 ? trackLessons[curIdx - 1] : undefined;
+    const next = curIdx < trackLessons.length - 1 ? trackLessons[curIdx + 1] : undefined;
+
+    return {
+      params: {
+        track: lesson.data.track,
+        slug: cleanSlug,
+      },
+      props: {
+        lesson,
+        prevLesson: prev
+          ? {
+              title: prev.data.title,
+              href: `/learn/${prev.data.track}/${prev.slug.split('/').pop()?.replace(/^\d+-/, '') || prev.slug}`,
+            }
+          : undefined,
+        nextLesson: next
+          ? {
+              title: next.data.title,
+              href: `/learn/${next.data.track}/${next.slug.split('/').pop()?.replace(/^\d+-/, '') || next.slug}`,
+            }
+          : undefined,
+      },
+    };
+  });
+}
+
+const { lesson, prevLesson, nextLesson } = Astro.props;
+const { Content } = await lesson.render();
+const cleanSlug = lesson.slug.split('/').pop()?.replace(/^\d+-/, '') || lesson.slug;
+const interactiveType = lesson.data.interactive?.enabled ? lesson.data.interactive?.type : null;
+---
+
+<LearnLayout
+  title={lesson.data.title}
+  description={lesson.data.description}
+  trackId={lesson.data.track}
+  level={lesson.data.level}
+  duration={lesson.data.duration}
+  prerequisites={lesson.data.prerequisites}
+  concepts={lesson.data.concepts}
+  tags={lesson.data.tags}
+  prevLesson={prevLesson}
+  nextLesson={nextLesson}
+  lessonId={lesson.data.id || cleanSlug}
+>
+  <!-- Interactive Simulator Injection if enabled -->
+  {interactiveType === 'http-request-simulator' && <HttpRequestSimulator />}
+  {interactiveType === 'cache-simulator' && <CacheSimulator />}
+  {interactiveType === 'consistent-hashing' && <ConsistentHashingSimulator />}
+  {interactiveType === 'rate-limiter' && <RateLimiterSimulator />}
+  {interactiveType === 'queue-backpressure' && <QueueBackpressureSimulator />}
+  {interactiveType === 'lru-cache' && <LruCachePlayground />}
+  {interactiveType === 'capacity-calculator' && <CapacityCalculator />}
+  {(interactiveType === 'tradeoff-game' || interactiveType === 'architecture-tradeoff') && (
+    <ArchitectureTradeoffGame />
+  )}
+
+  <!-- Markdown Lesson Body -->
+  <Content />
+</LearnLayout>

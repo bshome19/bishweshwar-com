@@ -1,0 +1,404 @@
+---
+// HttpRequestSimulator.astro — Interactive HTTP Request, Timeout & Retry Simulator
+---
+
+<div class="simulator-card" id="http-simulator">
+  <div class="simulator-header">
+    <div class="sim-title-group">
+      <span class="badge badge-amber">SIMULATOR</span>
+      <h3 class="sim-title">HTTP Request, Timeout &amp; Retry Simulator</h3>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="http-sim-reset">Reset</button>
+  </div>
+
+  <p class="sim-desc">
+    Simulate network latency, backend processing delays, timeout boundaries, and retries. Observe how naive retries amplify system strain when a server is already degrading.
+  </p>
+
+  <div class="sim-grid">
+    <!-- Controls -->
+    <div class="sim-controls-pane">
+      <div class="control-row">
+        <label for="http-network-latency" class="control-label">
+          <span>Network RTT (Latency):</span>
+          <span id="val-net-latency" class="control-num">40 ms</span>
+        </label>
+        <input type="range" id="http-network-latency" min="10" max="300" step="10" value="40" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="http-server-delay" class="control-label">
+          <span>Server Processing Time:</span>
+          <span id="val-server-delay" class="control-num">120 ms</span>
+        </label>
+        <input type="range" id="http-server-delay" min="20" max="1000" step="20" value="120" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="http-timeout" class="control-label">
+          <span>Client Timeout Limit:</span>
+          <span id="val-timeout" class="control-num">200 ms</span>
+        </label>
+        <input type="range" id="http-timeout" min="50" max="1000" step="25" value="200" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="http-retries" class="control-label">
+          <span>Max Retry Attempts:</span>
+          <span id="val-retries" class="control-num">2 retries</span>
+        </label>
+        <input type="range" id="http-retries" min="0" max="4" step="1" value="2" class="sim-slider" />
+      </div>
+
+      <div class="sim-actions">
+        <button type="button" id="btn-http-send" class="btn btn-primary btn-sm">Dispatch Single Request</button>
+        <button type="button" id="btn-http-burst" class="btn btn-secondary btn-sm">Inject Traffic Burst (10x)</button>
+      </div>
+    </div>
+
+    <!-- Output & Timeline -->
+    <div class="sim-output-pane">
+      <div class="sim-stat-deck">
+        <div class="stat-box">
+          <span class="stat-label">End-to-End Latency</span>
+          <span id="http-stat-latency" class="stat-value text-cyan">160 ms</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Outcome</span>
+          <span id="http-stat-status" class="stat-value text-emerald">200 OK</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Backend Work Multiplier</span>
+          <span id="http-stat-load" class="stat-value text-amber">1.0x</span>
+        </div>
+      </div>
+
+      <div class="timeline-wrapper">
+        <span class="timeline-title">Request Execution Trace:</span>
+        <div id="http-trace-feed" class="trace-feed" aria-live="polite">
+          <div class="trace-entry success">
+            <span class="trace-badge">Attempt 1</span>
+            <span class="trace-detail">Network RTT (40ms) + Server (120ms) = 160ms (within 200ms timeout) &rarr; SUCCESS</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="http-warning-banner" class="sim-warning-banner" style="display: none;">
+        ⚠️ <strong>Retry Storm Hazard:</strong> Client timeouts triggered retries while server processing was still occurring, multiplying backend load by <span id="warning-multiplier">3x</span>!
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const netLatencySlider = document.getElementById('http-network-latency');
+    const serverDelaySlider = document.getElementById('http-server-delay');
+    const timeoutSlider = document.getElementById('http-timeout');
+    const retriesSlider = document.getElementById('http-retries');
+
+    const valNetLatency = document.getElementById('val-net-latency');
+    const valServerDelay = document.getElementById('val-server-delay');
+    const valTimeout = document.getElementById('val-timeout');
+    const valRetries = document.getElementById('val-retries');
+
+    const statLatency = document.getElementById('http-stat-latency');
+    const statStatus = document.getElementById('http-stat-status');
+    const statLoad = document.getElementById('http-stat-load');
+    const traceFeed = document.getElementById('http-trace-feed');
+    const warningBanner = document.getElementById('http-warning-banner');
+    const warningMultiplier = document.getElementById('warning-multiplier');
+
+    const btnSend = document.getElementById('btn-http-send');
+    const btnBurst = document.getElementById('btn-http-burst');
+    const btnReset = document.getElementById('http-sim-reset');
+
+    function update() {
+      const net = parseInt(netLatencySlider.value, 10);
+      const server = parseInt(serverDelaySlider.value, 10);
+      const timeout = parseInt(timeoutSlider.value, 10);
+      const maxRetries = parseInt(retriesSlider.value, 10);
+
+      valNetLatency.textContent = `${net} ms`;
+      valServerDelay.textContent = `${server} ms`;
+      valTimeout.textContent = `${timeout} ms`;
+      valRetries.textContent = `${maxRetries} ${maxRetries === 1 ? 'retry' : 'retries'}`;
+
+      const attemptTime = net + server;
+      let totalTime = 0;
+      let attempts = 0;
+      let success = false;
+      let traces = [];
+
+      for (let i = 0; i <= maxRetries; i++) {
+        attempts++;
+        if (attemptTime <= timeout) {
+          totalTime += attemptTime;
+          success = true;
+          traces.push({
+            attempt: i + 1,
+            success: true,
+            msg: `Network (${net}ms) + Server (${server}ms) = ${attemptTime}ms &rarr; Succeeded within ${timeout}ms timeout.`,
+          });
+          break;
+        } else {
+          totalTime += timeout;
+          traces.push({
+            attempt: i + 1,
+            success: false,
+            msg: `Elapsed ${timeout}ms &rarr; TIMEOUT. Server was still computing (${attemptTime}ms). Retrying...`,
+          });
+        }
+      }
+
+      statLatency.textContent = `${totalTime} ms`;
+      if (success) {
+        statStatus.textContent = attempts > 1 ? '200 OK (Recovered)' : '200 OK';
+        statStatus.className = 'stat-value text-emerald';
+      } else {
+        statStatus.textContent = '504 Gateway Timeout';
+        statStatus.className = 'stat-value text-rose';
+      }
+
+      statLoad.textContent = `${attempts}.0x`;
+
+      traceFeed.innerHTML = traces.map((t) => `
+        <div class="trace-entry ${t.success ? 'success' : 'failure'}">
+          <span class="trace-badge">Attempt ${t.attempt}</span>
+          <span class="trace-detail">${t.msg}</span>
+        </div>
+      `).join('');
+
+      if (!success && attempts > 1 && attemptTime > timeout) {
+        warningBanner.style.display = 'block';
+        warningMultiplier.textContent = `${attempts}x`;
+      } else {
+        warningBanner.style.display = 'none';
+      }
+    }
+
+    netLatencySlider?.addEventListener('input', update);
+    serverDelaySlider?.addEventListener('input', update);
+    timeoutSlider?.addEventListener('input', update);
+    retriesSlider?.addEventListener('input', update);
+
+    btnSend?.addEventListener('click', () => {
+      update();
+    });
+
+    btnBurst?.addEventListener('click', () => {
+      netLatencySlider.value = '100';
+      serverDelaySlider.value = '450';
+      timeoutSlider.value = '250';
+      retriesSlider.value = '3';
+      update();
+    });
+
+    btnReset?.addEventListener('click', () => {
+      netLatencySlider.value = '40';
+      serverDelaySlider.value = '120';
+      timeoutSlider.value = '200';
+      retriesSlider.value = '2';
+      update();
+    });
+
+    update();
+  })();
+</script>
+
+<style>
+  .simulator-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin: 2.5rem 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .simulator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .sim-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sim-title {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .sim-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .sim-grid {
+      grid-template-columns: 1fr 1.2fr;
+    }
+  }
+
+  .sim-controls-pane {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .control-num {
+    font-family: var(--font-mono);
+    color: var(--accent-amber);
+    font-weight: 600;
+  }
+
+  .sim-slider {
+    width: 100%;
+    accent-color: var(--accent-amber);
+    cursor: pointer;
+  }
+
+  .sim-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+
+  .sim-output-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .sim-stat-deck {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .stat-box {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .text-cyan { color: var(--accent-cyan); }
+  .text-emerald { color: var(--accent-emerald); }
+  .text-amber { color: var(--accent-amber); }
+  .text-rose { color: var(--accent-rose); }
+
+  .timeline-wrapper {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+  }
+
+  .timeline-title {
+    display: block;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .trace-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .trace-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid transparent;
+  }
+
+  .trace-entry.success {
+    background: rgba(52, 211, 153, 0.08);
+    border-left-color: var(--accent-emerald);
+    color: var(--text-primary);
+  }
+
+  .trace-entry.failure {
+    background: rgba(251, 113, 133, 0.08);
+    border-left-color: var(--accent-rose);
+    color: var(--text-primary);
+  }
+
+  .trace-badge {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .trace-detail {
+    line-height: 1.4;
+  }
+
+  .sim-warning-banner {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--accent-amber);
+    line-height: 1.5;
+  }
+</style>

@@ -1,0 +1,416 @@
+---
+// RateLimiterSimulator.astro — Interactive Algorithm Throttling & Burst Visualizer
+---
+
+<div class="simulator-card" id="ratelimiter-simulator">
+  <div class="simulator-header">
+    <div class="sim-title-group">
+      <span class="badge badge-amber">SIMULATOR</span>
+      <h3 class="sim-title">Rate Limiting Algorithm &amp; Throttling Playground</h3>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="rl-sim-reset">Reset</button>
+  </div>
+
+  <p class="sim-desc">
+    Compare how <strong>Token Bucket</strong>, <strong>Fixed Window</strong>, <strong>Sliding Window Log</strong>, and <strong>Leaky Bucket</strong> handle sudden traffic bursts. Discover why Fixed Window permits $2\times$ boundary spikes and how Token Bucket accommodates temporary bursts without starvation.
+  </p>
+
+  <div class="sim-grid">
+    <!-- Controls -->
+    <div class="sim-controls-pane">
+      <div class="control-row">
+        <label class="control-label"><span>Select Rate Limiting Algorithm:</span></label>
+        <div class="algorithm-radios">
+          <label class="alg-choice">
+            <input type="radio" name="rl-alg" value="token" checked />
+            <span class="alg-label">
+              <strong>Token Bucket</strong>
+              <small>Refills at steady rate; permits burst up to capacity</small>
+            </span>
+          </label>
+          <label class="alg-choice">
+            <input type="radio" name="rl-alg" value="fixed" />
+            <span class="alg-label">
+              <strong>Fixed Window Counter</strong>
+              <small>Simple reset at boundary; vulnerable to $2\times$ edge bursts</small>
+            </span>
+          </label>
+          <label class="alg-choice">
+            <input type="radio" name="rl-alg" value="swl" />
+            <span class="alg-label">
+              <strong>Sliding Window Log</strong>
+              <small>Timestamp sliding window; perfectly smooth, $O(N)$ memory</small>
+            </span>
+          </label>
+          <label class="alg-choice">
+            <input type="radio" name="rl-alg" value="leaky" />
+            <span class="alg-label">
+              <strong>Leaky Bucket (Queue)</strong>
+              <small>Strict constant drain rate; flattens all bursts into queue</small>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <label for="rl-burst-slider" class="control-label">
+          <span>Incoming Request Burst:</span>
+          <span id="val-rl-burst" class="control-num">16 Requests</span>
+        </label>
+        <input type="range" id="rl-burst-slider" min="5" max="30" step="1" value="16" class="sim-slider" />
+      </div>
+
+      <div class="sim-actions">
+        <button type="button" id="btn-rl-fire" class="btn btn-primary btn-sm">Fire Instantaneous Burst</button>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="sim-output-pane">
+      <div class="sim-stat-deck">
+        <div class="stat-box">
+          <span class="stat-label">Requests Allowed</span>
+          <span id="rl-stat-allowed" class="stat-value text-emerald">10</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Throttled (429)</span>
+          <span id="rl-stat-dropped" class="stat-value text-rose">6</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Memory Complexity</span>
+          <span id="rl-stat-memory" class="stat-value text-cyan">O(1)</span>
+        </div>
+      </div>
+
+      <!-- Request Blocks Grid -->
+      <div class="burst-blocks-container">
+        <span class="blocks-title">Evaluation Stream (Quota: 10 req / sec):</span>
+        <div id="rl-blocks-stream" class="blocks-stream" aria-live="polite"></div>
+      </div>
+
+      <div class="insight-box">
+        <span class="insight-title">Algorithm Mechanics:</span>
+        <p id="rl-insight-text" class="insight-text">
+          Token Bucket has 10 initial tokens. 10 requests consume all tokens immediately and succeed. The remaining 6 requests are rejected with HTTP 429 until the bucket refills at 10 tokens/sec.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const burstSlider = document.getElementById('rl-burst-slider');
+    const valBurst = document.getElementById('val-rl-burst');
+    const statAllowed = document.getElementById('rl-stat-allowed');
+    const statDropped = document.getElementById('rl-stat-dropped');
+    const statMemory = document.getElementById('rl-stat-memory');
+    const blocksStream = document.getElementById('rl-blocks-stream');
+    const insightText = document.getElementById('rl-insight-text');
+    const btnFire = document.getElementById('btn-rl-fire');
+    const btnReset = document.getElementById('rl-sim-reset');
+
+    function update() {
+      const burst = parseInt(burstSlider.value, 10);
+      valBurst.textContent = `${burst} Requests`;
+
+      let alg = 'token';
+      document.querySelectorAll('input[name="rl-alg"]').forEach((r) => {
+        if (r.checked) alg = r.value;
+      });
+
+      const limit = 10;
+      let allowed = 0;
+      let dropped = 0;
+      let mem = 'O(1)';
+      let insight = '';
+
+      if (alg === 'token') {
+        allowed = Math.min(burst, limit);
+        dropped = burst - allowed;
+        mem = 'O(1)';
+        insight = `Token Bucket capacity is ${limit}. ${allowed} requests consume all available tokens on the spot. The other ${dropped} requests receive 429 Too Many Requests. It preserves O(1) state per client.`;
+      } else if (alg === 'fixed') {
+        allowed = Math.min(burst, limit);
+        dropped = burst - allowed;
+        mem = 'O(1)';
+        insight = `Fixed Window Counter counts up to ${limit}. If a user arrives at the 0.9s boundary with ${allowed} requests and sends ${allowed} more at 1.01s, ${allowed * 2} requests slip through across the boundary!`;
+      } else if (alg === 'swl') {
+        allowed = Math.min(burst, limit);
+        dropped = burst - allowed;
+        mem = 'O(N)';
+        insight = `Sliding Window Log tracks exact timestamps in a sorted list. Boundary burst attacks are impossible, but memory scales as O(N) where N is the number of requests in the window.`;
+      } else if (alg === 'leaky') {
+        allowed = Math.min(burst, limit);
+        dropped = burst - allowed;
+        mem = 'O(Q)';
+        insight = `Leaky Bucket enqueues incoming requests into a FIFO buffer and drains them at a strict, continuous rate. Even during bursts, downstream services receive traffic at exactly 10 req/sec.`;
+      }
+
+      statAllowed.textContent = allowed.toString();
+      statDropped.textContent = dropped.toString();
+      statMemory.textContent = mem;
+      insightText.textContent = insight;
+
+      let blocksHtml = '';
+      for (let i = 1; i <= burst; i++) {
+        const isOk = i <= allowed;
+        blocksHtml += `
+          <div class="req-chip ${isOk ? 'ok' : 'drop'}" title="Request #${i}: ${isOk ? '200 Allowed' : '429 Throttled'}">
+            #${i} ${isOk ? '✓' : '✗'}
+          </div>
+        `;
+      }
+      blocksStream.innerHTML = blocksHtml;
+    }
+
+    burstSlider?.addEventListener('input', update);
+    document.querySelectorAll('input[name="rl-alg"]').forEach((input) => {
+      input.addEventListener('change', update);
+    });
+
+    btnFire?.addEventListener('click', update);
+
+    btnReset?.addEventListener('click', () => {
+      burstSlider.value = '16';
+      const r = document.querySelector('input[name="rl-alg"][value="token"]');
+      if (r) r.checked = true;
+      update();
+    });
+
+    update();
+  })();
+</script>
+
+<style>
+  .simulator-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin: 2.5rem 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .simulator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .sim-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sim-title {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .sim-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .sim-grid {
+      grid-template-columns: 1.1fr 1fr;
+    }
+  }
+
+  .sim-controls-pane {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .control-num {
+    font-family: var(--font-mono);
+    color: var(--accent-amber);
+    font-weight: 600;
+  }
+
+  .algorithm-radios {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .alg-choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+  }
+
+  .alg-choice:hover {
+    border-color: var(--accent-primary);
+  }
+
+  .alg-choice input {
+    margin-top: 0.2rem;
+    accent-color: var(--accent-primary);
+  }
+
+  .alg-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+  }
+
+  .alg-label small {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .sim-slider {
+    width: 100%;
+    accent-color: var(--accent-amber);
+    cursor: pointer;
+  }
+
+  .sim-actions {
+    margin-top: 0.5rem;
+  }
+
+  .sim-output-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .sim-stat-deck {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .stat-box {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .text-cyan { color: var(--accent-cyan); }
+  .text-emerald { color: var(--accent-emerald); }
+  .text-rose { color: var(--accent-rose); }
+
+  .burst-blocks-container {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+  }
+
+  .blocks-title {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .blocks-stream {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+
+  .req-chip {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+  }
+
+  .req-chip.ok {
+    background: rgba(52, 211, 153, 0.15);
+    color: var(--accent-emerald);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+  }
+
+  .req-chip.drop {
+    background: rgba(251, 113, 133, 0.15);
+    color: var(--accent-rose);
+    border: 1px solid rgba(251, 113, 133, 0.3);
+  }
+
+  .insight-box {
+    background: rgba(56, 189, 248, 0.06);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+  }
+
+  .insight-title {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: 0.35rem;
+  }
+
+  .insight-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+  }
+</style>

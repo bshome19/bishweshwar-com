@@ -1,0 +1,134 @@
+---
+interface Props {
+  problem: string;
+  useWhen: string;
+  avoidWhen: string;
+  cost: string;
+  failureMode: string;
+  alternative: string;
+}
+
+const {
+  problem,
+  useWhen,
+  avoidWhen,
+  cost,
+  failureMode,
+  alternative,
+} = Astro.props;
+---
+
+<div class="decision-card-wrapper" role="region" aria-label="Architecture Decision Matrix">
+  <div class="decision-card-header">
+    <span class="decision-badge">ARCHITECTURE DECISION CARD</span>
+  </div>
+  <div class="decision-table-container">
+    <table class="decision-table">
+      <tbody>
+        <tr>
+          <th scope="row" class="decision-prop">Problem Solved</th>
+          <td class="decision-val">{problem}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="decision-prop">Use When</th>
+          <td class="decision-val highlight-green">{useWhen}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="decision-prop">Avoid When</th>
+          <td class="decision-val highlight-rose">{avoidWhen}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="decision-prop">Overhead / Cost</th>
+          <td class="decision-val highlight-amber">{cost}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="decision-prop">Failure Mode</th>
+          <td class="decision-val highlight-red">{failureMode}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="decision-prop">Alternatives</th>
+          <td class="decision-val">{alternative}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  .decision-card-wrapper {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    margin: 2rem 0;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .decision-card-header {
+    background: var(--bg-elevated);
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .decision-badge {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--accent-cyan);
+  }
+
+  .decision-table-container {
+    overflow-x: auto;
+  }
+
+  .decision-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+  }
+
+  .decision-table tr {
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .decision-table tr:last-child {
+    border-bottom: none;
+  }
+
+  .decision-prop {
+    width: 28%;
+    min-width: 130px;
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.85rem 1rem;
+    vertical-align: top;
+    text-transform: none;
+  }
+
+  .decision-val {
+    padding: 0.85rem 1rem;
+    font-size: 0.9375rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  .highlight-green {
+    color: var(--accent-emerald);
+  }
+
+  .highlight-rose {
+    color: var(--accent-rose);
+  }
+
+  .highlight-amber {
+    color: var(--accent-amber);
+  }
+
+  .highlight-red {
+    color: #f87171;
+  }
+</style>

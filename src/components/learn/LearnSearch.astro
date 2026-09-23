@@ -1,0 +1,255 @@
+---
+interface SearchItem {
+  title: string;
+  href: string;
+  track: string;
+  level: string;
+  concepts: string[];
+  description?: string;
+}
+
+interface Props {
+  items: SearchItem[];
+}
+
+const { items = [] } = Astro.props;
+---
+
+<div class="learn-search-container">
+  <div class="search-input-wrapper">
+    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+    <input
+      type="search"
+      id="learn-search-input"
+      class="learn-search-input"
+      placeholder="Search concepts, patterns, algorithms (e.g. 'consistent hashing', 'lru', 'cap', 'solid')..."
+      aria-label="Search lessons and architecture concepts"
+      autocomplete="off"
+    />
+    <kbd class="search-kbd" title="Press '/' to focus">/</kbd>
+  </div>
+
+  <div id="search-results-panel" class="search-results-panel" style="display: none;" role="listbox">
+    <div id="search-results-list" class="search-results-list"></div>
+    <div id="search-empty-state" class="search-empty-state" style="display: none;">
+      <p>No lessons or concepts matching your query.</p>
+    </div>
+  </div>
+</div>
+
+<script is:inline define:vars={{ items }}>
+  (() => {
+    const input = document.getElementById('learn-search-input');
+    const panel = document.getElementById('search-results-panel');
+    const list = document.getElementById('search-results-list');
+    const empty = document.getElementById('search-empty-state');
+    if (!input || !panel || !list || !empty) return;
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== input) {
+        e.preventDefault();
+        input.focus();
+      } else if (e.key === 'Escape' && document.activeElement === input) {
+        panel.style.display = 'none';
+        input.blur();
+      }
+    });
+
+    input.addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) {
+        panel.style.display = 'none';
+        list.innerHTML = '';
+        return;
+      }
+
+      const matches = items.filter((item) => {
+        const titleMatch = item.title.toLowerCase().includes(q);
+        const trackMatch = item.track.toLowerCase().includes(q);
+        const conceptMatch = item.concepts.some((c) => c.toLowerCase().includes(q));
+        const descMatch = item.description?.toLowerCase().includes(q) || false;
+        return titleMatch || trackMatch || conceptMatch || descMatch;
+      }).slice(0, 8);
+
+      if (matches.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        panel.style.display = 'block';
+      } else {
+        empty.style.display = 'none';
+        list.innerHTML = matches.map((item) => `
+          <a href="${item.href}" class="search-result-item" role="option">
+            <div class="result-title-row">
+              <span class="result-title">${escapeHtml(item.title)}</span>
+              <span class="badge result-badge">${escapeHtml(item.track)}</span>
+            </div>
+            ${item.description ? `<p class="result-desc">${escapeHtml(item.description)}</p>` : ''}
+            ${item.concepts && item.concepts.length ? `
+              <div class="result-concepts">
+                ${item.concepts.slice(0, 3).map((c) => `<span class="result-concept">#${escapeHtml(c)}</span>`).join('')}
+              </div>
+            ` : ''}
+          </a>
+        `).join('');
+        panel.style.display = 'block';
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target) && !panel.contains(e.target)) {
+        panel.style.display = 'none';
+      }
+    });
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  })();
+</script>
+
+<style>
+  .learn-search-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 2.5rem;
+  }
+
+  .search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1rem;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .learn-search-input {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 3rem 0.85rem 2.75rem;
+    font-size: 1rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .learn-search-input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+  }
+
+  .search-kbd {
+    position: absolute;
+    right: 1rem;
+    background: var(--bg-muted);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.15rem 0.45rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .search-results-panel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+
+  .search-results-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-result-item {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    text-decoration: none !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    transition: background-color var(--transition-fast);
+  }
+
+  .search-result-item:last-child {
+    border-bottom: none;
+  }
+
+  .search-result-item:hover, .search-result-item:focus {
+    background: var(--bg-elevated);
+  }
+
+  .result-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .result-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .result-badge {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    background: var(--bg-muted);
+    color: var(--accent-primary);
+  }
+
+  .result-desc {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .result-concepts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.2rem;
+  }
+
+  .result-concept {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent-cyan);
+  }
+
+  .search-empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+</style>

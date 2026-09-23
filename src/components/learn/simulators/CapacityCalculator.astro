@@ -1,0 +1,360 @@
+---
+// CapacityCalculator.astro — Interactive Scale Estimation & Little's Law Sizing Engine
+---
+
+<div class="simulator-card" id="capacity-calculator">
+  <div class="simulator-header">
+    <div class="sim-title-group">
+      <span class="badge badge-amber">SIMULATOR</span>
+      <h3 class="sim-title">Capacity, Bandwidth &amp; Little's Law Infrastructure Sizing</h3>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="cap-calc-reset">Reset</button>
+  </div>
+
+  <p class="sim-desc">
+    Derive infrastructure requirements from user metrics. Calculate <strong>Read/Write QPS</strong>, <strong>5-year persistent storage</strong>, <strong>bandwidth throughput</strong>, <strong>memory caching footprint</strong>, and minimum application server instances via <strong>Little's Law</strong> ($L = \lambda \times W$).
+  </p>
+
+  <div class="sim-grid">
+    <!-- Sliders Pane -->
+    <div class="sim-controls-pane">
+      <div class="control-row">
+        <label for="calc-dau" class="control-label">
+          <span>Daily Active Users (DAU):</span>
+          <span id="val-calc-dau" class="control-num">10 Million</span>
+        </label>
+        <input type="range" id="calc-dau" min="1" max="100" step="1" value="10" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="calc-reads" class="control-label">
+          <span>Reads per User / Day:</span>
+          <span id="val-calc-reads" class="control-num">40 reads</span>
+        </label>
+        <input type="range" id="calc-reads" min="5" max="100" step="5" value="40" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="calc-writes" class="control-label">
+          <span>Writes per User / Day:</span>
+          <span id="val-calc-writes" class="control-num">4 writes</span>
+        </label>
+        <input type="range" id="calc-writes" min="1" max="20" step="1" value="4" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="calc-size" class="control-label">
+          <span>Average Payload Size:</span>
+          <span id="val-calc-size" class="control-num">2 KB</span>
+        </label>
+        <input type="range" id="calc-size" min="1" max="20" step="1" value="2" class="sim-slider" />
+      </div>
+    </div>
+
+    <!-- Output Metrics Deck -->
+    <div class="sim-output-pane">
+      <div class="sim-stat-deck">
+        <div class="stat-box">
+          <span class="stat-label">Peak Read QPS (2.5x)</span>
+          <span id="stat-peak-read" class="stat-value text-cyan">11,574 QPS</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Peak Write QPS (2.5x)</span>
+          <span id="stat-peak-write" class="stat-value text-amber">1,157 QPS</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">5-Year Storage (3x Rep)</span>
+          <span id="stat-storage-5yr" class="stat-value text-emerald">438 TB</span>
+        </div>
+      </div>
+
+      <div class="derived-metrics-list">
+        <div class="derived-item">
+          <span class="derived-prop">Network Egress Bandwidth</span>
+          <strong id="stat-bandwidth" class="derived-val">740.7 Mbps</strong>
+        </div>
+        <div class="derived-item">
+          <span class="derived-prop">20% Daily Read Cache (RAM)</span>
+          <strong id="stat-cache-ram" class="derived-val">160 GB RAM</strong>
+        </div>
+        <div class="derived-item">
+          <span class="derived-prop">App Server Instances Needed (Little's Law)</span>
+          <strong id="stat-servers" class="derived-val">12 Pods (50ms avg latency)</strong>
+        </div>
+      </div>
+
+      <div class="formula-box">
+        <span class="formula-title">📐 Little's Law Formula Applied:</span>
+        <code class="formula-code">L = &lambda; &times; W &rarr; Concurrency = 11,574 req/sec &times; 0.050 sec = ~579 concurrent in-flight requests. At 50 concurrent requests per pod &rarr; 12 server pods required.</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const dauSlider = document.getElementById('calc-dau');
+    const readsSlider = document.getElementById('calc-reads');
+    const writesSlider = document.getElementById('calc-writes');
+    const sizeSlider = document.getElementById('calc-size');
+
+    const valDau = document.getElementById('val-calc-dau');
+    const valReads = document.getElementById('val-calc-reads');
+    const valWrites = document.getElementById('val-calc-writes');
+    const valSize = document.getElementById('val-calc-size');
+
+    const statPeakRead = document.getElementById('stat-peak-read');
+    const statPeakWrite = document.getElementById('stat-peak-write');
+    const statStorage5Yr = document.getElementById('stat-storage-5yr');
+    const statBandwidth = document.getElementById('stat-bandwidth');
+    const statCacheRam = document.getElementById('stat-cache-ram');
+    const statServers = document.getElementById('stat-servers');
+
+    const btnReset = document.getElementById('cap-calc-reset');
+
+    function calculate() {
+      const dauMillions = parseInt(dauSlider.value, 10);
+      const readsPerUser = parseInt(readsSlider.value, 10);
+      const writesPerUser = parseInt(writesSlider.value, 10);
+      const payloadKb = parseInt(sizeSlider.value, 10);
+
+      valDau.textContent = `${dauMillions} Million`;
+      valReads.textContent = `${readsPerUser} reads`;
+      valWrites.textContent = `${writesPerUser} writes`;
+      valSize.textContent = `${payloadKb} KB`;
+
+      const totalDau = dauMillions * 1000000;
+      const SECONDS_PER_DAY = 86400;
+
+      // QPS Calculations
+      const avgReadQps = (totalDau * readsPerUser) / SECONDS_PER_DAY;
+      const peakReadQps = Math.round(avgReadQps * 2.5);
+
+      const avgWriteQps = (totalDau * writesPerUser) / SECONDS_PER_DAY;
+      const peakWriteQps = Math.round(avgWriteQps * 2.5);
+
+      // Storage Calculations
+      const dailyWriteBytes = totalDau * writesPerUser * payloadKb * 1024;
+      const yearlyWriteTb = (dailyWriteBytes * 365) / (1024 * 1024 * 1024 * 1024);
+      const fiveYearStorageTb = Math.round(yearlyWriteTb * 5 * 3); // 3x replication factor
+
+      // Bandwidth (Egress: peak read QPS * payload size in bits)
+      const egressBitsPerSec = peakReadQps * payloadKb * 1024 * 8;
+      const egressMbps = (egressBitsPerSec / 1000000).toFixed(1);
+
+      // Cache RAM (20% of daily reads)
+      const totalDailyReadBytes = totalDau * readsPerUser * payloadKb * 1024;
+      const cacheBytes = totalDailyReadBytes * 0.20;
+      const cacheGb = Math.round(cacheBytes / (1024 * 1024 * 1024));
+
+      // Little's Law: L = Lambda * W
+      // Assume 50ms average service time W = 0.050s
+      // Safe concurrent request capacity per container pod = 50 concurrent requests
+      const avgConcurrency = (peakReadQps + peakWriteQps) * 0.050;
+      const podsNeeded = Math.max(2, Math.ceil(avgConcurrency / 50));
+
+      statPeakRead.textContent = `${peakReadQps.toLocaleString()} QPS`;
+      statPeakWrite.textContent = `${peakWriteQps.toLocaleString()} QPS`;
+      statStorage5Yr.textContent = fiveYearStorageTb >= 1000 ? `${(fiveYearStorageTb / 1000).toFixed(1)} PB` : `${fiveYearStorageTb.toLocaleString()} TB`;
+      statBandwidth.textContent = egressMbps >= 1000 ? `${(egressMbps / 1000).toFixed(2)} Gbps` : `${egressMbps} Mbps`;
+      statCacheRam.textContent = `${cacheGb.toLocaleString()} GB RAM`;
+      statServers.textContent = `${podsNeeded} Pods (at 50ms avg latency)`;
+    }
+
+    dauSlider?.addEventListener('input', calculate);
+    readsSlider?.addEventListener('input', calculate);
+    writesSlider?.addEventListener('input', calculate);
+    sizeSlider?.addEventListener('input', calculate);
+
+    btnReset?.addEventListener('click', () => {
+      dauSlider.value = '10';
+      readsSlider.value = '40';
+      writesSlider.value = '4';
+      sizeSlider.value = '2';
+      calculate();
+    });
+
+    calculate();
+  })();
+</script>
+
+<style>
+  .simulator-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin: 2.5rem 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .simulator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .sim-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sim-title {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .sim-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .sim-grid {
+      grid-template-columns: 1fr 1.25fr;
+    }
+  }
+
+  .sim-controls-pane {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .control-num {
+    font-family: var(--font-mono);
+    color: var(--accent-amber);
+    font-weight: 600;
+  }
+
+  .sim-slider {
+    width: 100%;
+    accent-color: var(--accent-amber);
+    cursor: pointer;
+  }
+
+  .sim-output-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .sim-stat-deck {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .stat-box {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .text-cyan { color: var(--accent-cyan); }
+  .text-amber { color: var(--accent-amber); }
+  .text-emerald { color: var(--accent-emerald); }
+
+  .derived-metrics-list {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .derived-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .derived-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .derived-prop {
+    color: var(--text-secondary);
+  }
+
+  .derived-val {
+    font-family: var(--font-mono);
+    color: var(--accent-primary);
+  }
+
+  .formula-box {
+    background: rgba(192, 132, 252, 0.08);
+    border: 1px solid rgba(192, 132, 252, 0.25);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+  }
+
+  .formula-title {
+    display: block;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    color: var(--accent-purple);
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+  }
+
+  .formula-code {
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+    background: transparent;
+    border: none;
+    padding: 0;
+    line-height: 1.5;
+  }
+</style>

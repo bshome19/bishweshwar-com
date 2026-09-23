@@ -1,0 +1,445 @@
+---
+// ArchitectureTradeoffGame.astro — Interactive Architecture Trade-Off Decision Explorer
+---
+
+<div class="simulator-card" id="tradeoff-game">
+  <div class="simulator-header">
+    <div class="sim-title-group">
+      <span class="badge badge-amber">SIMULATOR</span>
+      <h3 class="sim-title">Architecture Trade-Off &amp; PACELC Decision Matrix</h3>
+    </div>
+    <span class="badge badge-cyan">Reasoning Engine</span>
+  </div>
+
+  <p class="sim-desc">
+    Architecture is not about memorizing components—it is about balancing trade-offs under real-world constraints. Pick a scenario below, select an architecture strategy, and evaluate its impact across <strong>Consistency</strong>, <strong>Latency</strong>, <strong>Availability</strong>, and <strong>Cost</strong>.
+  </p>
+
+  <div class="sim-grid">
+    <!-- Scenarios -->
+    <div class="sim-controls-pane">
+      <div class="control-row">
+        <label for="scenario-select" class="control-label"><span>Select Real-World Problem:</span></label>
+        <select id="scenario-select" class="scenario-dropdown">
+          <option value="profile">1. Global Profile Picture Updates (Social Network)</option>
+          <option value="ledger">2. Financial Banking Transfer & Double-Spend Guard</option>
+          <option value="leaderboard">3. Real-Time Gaming Live Leaderboard (Millions of Scores)</option>
+          <option value="audit">4. Regulatory Healthcare Incident Log (Zero Data Loss)</option>
+        </select>
+      </div>
+
+      <div class="control-row">
+        <label class="control-label"><span>Choose Architecture Strategy:</span></label>
+        <div id="strategy-options-list" class="strategy-options"></div>
+      </div>
+    </div>
+
+    <!-- Tradeoff Matrix Evaluation -->
+    <div class="sim-output-pane">
+      <div class="tradeoff-radar-card">
+        <span class="radar-title">Architectural Impact Scorecard:</span>
+        <div class="metric-meter-deck">
+          <div class="meter-item">
+            <div class="meter-info">
+              <span>Consistency (Data Correctness)</span>
+              <strong id="m-consistency" class="text-emerald">High</strong>
+            </div>
+            <div class="meter-track"><div id="bar-consistency" class="meter-fill" style="width: 85%; background: var(--accent-emerald);"></div></div>
+          </div>
+          <div class="meter-item">
+            <div class="meter-info">
+              <span>Latency (Response Speed)</span>
+              <strong id="m-latency" class="text-cyan">Sub-20ms</strong>
+            </div>
+            <div class="meter-track"><div id="bar-latency" class="meter-fill" style="width: 90%; background: var(--accent-cyan);"></div></div>
+          </div>
+          <div class="meter-item">
+            <div class="meter-info">
+              <span>Availability (Uptime during Partition)</span>
+              <strong id="m-availability" class="text-amber">99.99%</strong>
+            </div>
+            <div class="meter-track"><div id="bar-availability" class="meter-fill" style="width: 95%; background: var(--accent-amber);"></div></div>
+          </div>
+          <div class="meter-item">
+            <div class="meter-info">
+              <span>Complexity &amp; Infrastructure Cost</span>
+              <strong id="m-cost" class="text-rose">Moderate</strong>
+            </div>
+            <div class="meter-track"><div id="bar-cost" class="meter-fill" style="width: 50%; background: var(--accent-rose);"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="verdict-box">
+        <span class="verdict-title">Architectural Evaluation:</span>
+        <p id="tradeoff-verdict" class="verdict-text"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const SCENARIOS = {
+      profile: {
+        title: 'Global Profile Picture Updates',
+        strategies: [
+          {
+            id: 'eventual',
+            name: 'Strategy A: Asynchronous CDN Invalidation (Eventual Consistency)',
+            desc: 'Write to local primary, return immediately to user with optimistic local render, and propagate CDN purge via async message bus.',
+            scores: { c: 60, l: 95, a: 98, cost: 35 },
+            labels: { c: 'Eventual (Seconds)', l: 'Ultra Fast (<15ms)', a: '99.999%', cost: 'Low' },
+            verdict: 'EXCELLENT FIT. Users see their own uploaded photo immediately through optimistic UI updates, while friends across the globe see it within 3 seconds. Paying for distributed synchronous multi-region locks on profile photos is an anti-pattern.',
+          },
+          {
+            id: 'sync-twopc',
+            name: 'Strategy B: Multi-Region Synchronous 2PC (Strong Consistency)',
+            desc: 'Hold global distributed locks across all cloud regions until every global cache confirms eviction.',
+            scores: { c: 100, l: 20, a: 65, cost: 95 },
+            labels: { c: 'Strict Linearizable', l: 'High (350ms+ cross-region)', a: 'Fragile (65%)', cost: 'Prohibitive' },
+            verdict: 'POOR FIT. A trans-oceanic network partition halts avatar uploads for all active users worldwide. Over-engineering for strong consistency where business requirements permit eventual consistency.',
+          },
+        ],
+      },
+      ledger: {
+        title: 'Financial Banking Transfer',
+        strategies: [
+          {
+            id: 'raft-consensus',
+            name: 'Strategy A: Quorum Consensus (Raft / 2PC with WAL)',
+            desc: 'Strict serializable isolation. Write-Ahead Logging and majority quorum confirmation before acknowledging payment.',
+            scores: { c: 100, l: 45, a: 90, cost: 75 },
+            labels: { c: 'Strict ACID', l: 'Acceptable (45ms)', a: '99.95% (CP)', cost: 'High' },
+            verdict: 'CANONICAL ARCHITECTURE. When handling real money, double-spend anomalies are fatal. Sacrificing sub-millisecond latency for mathematical correctness and auditability is the non-negotiable trade-off.',
+          },
+          {
+            id: 'async-mem',
+            name: 'Strategy B: In-Memory Async Redis Counter (Fail-Open)',
+            desc: 'Perform in-memory decrement in Redis and flush to disk asynchronously in batches.',
+            scores: { c: 30, l: 98, a: 99, cost: 25 },
+            labels: { c: 'Data Loss Risk', l: '<2ms', a: '99.99%', cost: 'Low' },
+            verdict: 'CATASTROPHIC RISK. If Redis crashes before disk sync, deposits disappear and balances diverge. Fast latency cannot compensate for financial insolvency.',
+          },
+        ],
+      },
+      leaderboard: {
+        title: 'Real-Time Gaming Leaderboard',
+        strategies: [
+          {
+            id: 'redis-zset',
+            name: 'Strategy A: Redis Sorted Set (ZSET) + Read Replicas',
+            desc: 'Scores updated in-memory via Skiplist O(log N). Read replicas serve top-100 queries; periodic snapshot to disk.',
+            scores: { c: 80, l: 95, a: 95, cost: 50 },
+            labels: { c: 'Monotonic Order', l: 'Sub-5ms', a: '99.99%', cost: 'Moderate' },
+            verdict: 'OPTIMAL FIT. Skiplist data structures provide instant rank lookup for millions of concurrent players. Transient restarts are recovered from background snapshots without impacting active matches.',
+          },
+          {
+            id: 'rdbms-index',
+            name: 'Strategy B: Postgres ORDER BY score DESC on Single Table',
+            desc: 'Insert raw scores into relational table with B-Tree index; query rank via COUNT(*) where score > player.',
+            scores: { c: 98, l: 25, a: 70, cost: 80 },
+            labels: { c: 'Exact ACID', l: 'Degrades (400ms+)', a: 'Bottleneck', cost: 'High (IOPS)' },
+            verdict: 'BOTTLENECK HAZARD. Table lock contention on index roots under 50,000 score updates per second causes cascading database timeouts and IOPS saturation.',
+          },
+        ],
+      },
+      audit: {
+        title: 'Healthcare Incident Diagnostic Log',
+        strategies: [
+          {
+            id: 'append-kafka',
+            name: 'Strategy A: Immutable Append-Only Kafka with Backpressure',
+            desc: 'Partitioned write log with min.insync.replicas=2. Throttle upstream if storage buffers hit safety thresholds.',
+            scores: { c: 98, l: 80, a: 95, cost: 60 },
+            labels: { c: 'Guaranteed At-Least-Once', l: '10ms', a: '99.99%', cost: 'Moderate' },
+            verdict: 'IDEAL ARCHITECTURE. Append-only sequential I/O guarantees forensic immutability, while backpressure prevents quiet message dropping when log volumes spike.',
+          },
+        ],
+      },
+    };
+
+    const scenarioSelect = document.getElementById('scenario-select');
+    const optionsContainer = document.getElementById('strategy-options-list');
+
+    const mConsistency = document.getElementById('m-consistency');
+    const mLatency = document.getElementById('m-latency');
+    const mAvailability = document.getElementById('m-availability');
+    const mCost = document.getElementById('m-cost');
+
+    const barConsistency = document.getElementById('bar-consistency');
+    const barLatency = document.getElementById('bar-latency');
+    const barAvailability = document.getElementById('bar-availability');
+    const barCost = document.getElementById('bar-cost');
+
+    const verdictText = document.getElementById('tradeoff-verdict');
+
+    function populateStrategies() {
+      const curScenarioKey = scenarioSelect.value;
+      const scenario = SCENARIOS[curScenarioKey];
+
+      optionsContainer.innerHTML = scenario.strategies.map((strat, idx) => `
+        <label class="strat-choice">
+          <input type="radio" name="strat-choice" value="${strat.id}" ${idx === 0 ? 'checked' : ''} />
+          <div class="strat-details">
+            <span class="strat-title">${strat.name}</span>
+            <span class="strat-desc">${strat.desc}</span>
+          </div>
+        </label>
+      `).join('');
+
+      document.querySelectorAll('input[name="strat-choice"]').forEach((r) => {
+        r.addEventListener('change', evaluate);
+      });
+
+      evaluate();
+    }
+
+    function evaluate() {
+      const curScenarioKey = scenarioSelect.value;
+      const scenario = SCENARIOS[curScenarioKey];
+
+      let selectedId = scenario.strategies[0].id;
+      document.querySelectorAll('input[name="strat-choice"]').forEach((r) => {
+        if (r.checked) selectedId = r.value;
+      });
+
+      const strat = scenario.strategies.find((s) => s.id === selectedId) || scenario.strategies[0];
+
+      mConsistency.textContent = strat.labels.c;
+      mLatency.textContent = strat.labels.l;
+      mAvailability.textContent = strat.labels.a;
+      mCost.textContent = strat.labels.cost;
+
+      barConsistency.style.width = `${strat.scores.c}%`;
+      barLatency.style.width = `${strat.scores.l}%`;
+      barAvailability.style.width = `${strat.scores.a}%`;
+      barCost.style.width = `${strat.scores.cost}%`;
+
+      verdictText.textContent = strat.verdict;
+    }
+
+    scenarioSelect?.addEventListener('change', populateStrategies);
+    populateStrategies();
+  })();
+</script>
+
+<style>
+  .simulator-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin: 2.5rem 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .simulator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .sim-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sim-title {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .sim-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .sim-grid {
+      grid-template-columns: 1.15fr 1fr;
+    }
+  }
+
+  .sim-controls-pane {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .control-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .scenario-dropdown {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    padding: 0.6rem 0.8rem;
+    font-size: 0.875rem;
+    outline: none;
+  }
+
+  .scenario-dropdown:focus {
+    border-color: var(--accent-primary);
+  }
+
+  .strategy-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .strat-choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.75rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+  }
+
+  .strat-choice:hover {
+    border-color: var(--accent-primary);
+  }
+
+  .strat-choice input {
+    margin-top: 0.2rem;
+    accent-color: var(--accent-primary);
+  }
+
+  .strat-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .strat-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .strat-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  .sim-output-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .tradeoff-radar-card {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+
+  .radar-title {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+
+  .metric-meter-deck {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .meter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .meter-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+  }
+
+  .meter-info span {
+    color: var(--text-secondary);
+  }
+
+  .meter-info strong {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+  }
+
+  .meter-track {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .meter-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width var(--transition-normal);
+  }
+
+  .text-cyan { color: var(--accent-cyan); }
+  .text-emerald { color: var(--accent-emerald); }
+  .text-amber { color: var(--accent-amber); }
+  .text-rose { color: var(--accent-rose); }
+
+  .verdict-box {
+    background: rgba(56, 189, 248, 0.06);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+  }
+
+  .verdict-title {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: 0.35rem;
+  }
+
+  .verdict-text {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin: 0;
+  }
+</style>

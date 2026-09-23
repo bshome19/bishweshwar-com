@@ -1,0 +1,406 @@
+---
+// ConsistentHashingSimulator.astro — Interactive Consistent Hashing Ring & Virtual Node Simulator
+---
+
+<div class="simulator-card" id="hashing-simulator">
+  <div class="simulator-header">
+    <div class="sim-title-group">
+      <span class="badge badge-amber">SIMULATOR</span>
+      <h3 class="sim-title">Consistent Hashing Ring &amp; Rebalancing Simulator</h3>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="hash-sim-reset">Reset Ring</button>
+  </div>
+
+  <p class="sim-desc">
+    Explore the circular hash ring ($0$ to $2^{32}-1$). See how <strong>Virtual Nodes (vnodes)</strong> prevent severe hash skew, and how adding or removing a database node only re-maps $K/n$ keys instead of flushing the entire cluster.
+  </p>
+
+  <div class="sim-grid">
+    <!-- Controls -->
+    <div class="sim-controls-pane">
+      <div class="control-row">
+        <label for="hash-nodes" class="control-label">
+          <span>Physical Servers:</span>
+          <span id="val-hash-nodes" class="control-num">4 Servers</span>
+        </label>
+        <input type="range" id="hash-nodes" min="3" max="8" step="1" value="4" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="hash-vnodes" class="control-label">
+          <span>Virtual Nodes per Server:</span>
+          <span id="val-hash-vnodes" class="control-num">50 vnodes</span>
+        </label>
+        <input type="range" id="hash-vnodes" min="1" max="150" step="5" value="50" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="hash-keys" class="control-label">
+          <span>Keys Stored in Cluster:</span>
+          <span id="val-hash-keys" class="control-num">2,000 keys</span>
+        </label>
+        <input type="range" id="hash-keys" min="500" max="10000" step="500" value="2000" class="sim-slider" />
+      </div>
+
+      <div class="sim-actions">
+        <button type="button" id="btn-hash-add-node" class="btn btn-primary btn-sm">+ Add Server Node</button>
+        <button type="button" id="btn-hash-kill-node" class="btn btn-secondary btn-sm">💥 Kill One Server</button>
+      </div>
+    </div>
+
+    <!-- Visualization & Distribution -->
+    <div class="sim-output-pane">
+      <div class="ring-display-container">
+        <!-- SVG Hash Ring -->
+        <svg id="hash-ring-svg" viewBox="0 0 260 260" class="hash-ring-svg" aria-label="Consistent Hash Ring Visualization">
+          <circle cx="130" cy="130" r="100" fill="none" stroke="var(--border-default)" stroke-width="6" stroke-dasharray="4 4" />
+          <text x="130" y="125" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-mono)" font-size="11">HASH RING</text>
+          <text x="130" y="142" text-anchor="middle" fill="var(--accent-cyan)" font-family="var(--font-mono)" font-size="10">2^32 - 1</text>
+          <g id="hash-ring-nodes"></g>
+        </svg>
+
+        <div class="distribution-summary">
+          <span class="dist-title">Key Distribution Across Nodes:</span>
+          <div id="node-distribution-bars" class="node-bars-list"></div>
+        </div>
+      </div>
+
+      <div id="rebalance-callout" class="rebalance-callout" style="display: none;">
+        <span>🔄 <strong>Rebalancing Efficiency:</strong> Only ~<span id="remapped-pct">25%</span> of keys (<span id="remapped-count">500</span> keys) were remapped! With naive modulo hashing (<code>hash % N</code>), over <strong>75%</strong> of keys would have required migration.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const nodesSlider = document.getElementById('hash-nodes');
+    const vnodesSlider = document.getElementById('hash-vnodes');
+    const keysSlider = document.getElementById('hash-keys');
+
+    const valNodes = document.getElementById('val-hash-nodes');
+    const valVnodes = document.getElementById('val-hash-vnodes');
+    const valKeys = document.getElementById('val-hash-keys');
+
+    const svgNodesGroup = document.getElementById('hash-ring-nodes');
+    const barsContainer = document.getElementById('node-distribution-bars');
+    const rebalanceCallout = document.getElementById('rebalance-callout');
+    const remappedPct = document.getElementById('remapped-pct');
+    const remappedCount = document.getElementById('remapped-count');
+
+    const btnAdd = document.getElementById('btn-hash-add-node');
+    const btnKill = document.getElementById('btn-hash-kill-node');
+    const btnReset = document.getElementById('hash-sim-reset');
+
+    const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#c084fc', '#f43f5e', '#a855f7', '#06b6d4', '#eab308'];
+    const NAMES = ['Node Alpha', 'Node Beta', 'Node Gamma', 'Node Delta', 'Node Epsilon', 'Node Zeta', 'Node Eta', 'Node Theta'];
+
+    let prevNodeCount = 4;
+
+    function render() {
+      const numNodes = parseInt(nodesSlider.value, 10);
+      const numVnodes = parseInt(vnodesSlider.value, 10);
+      const totalKeys = parseInt(keysSlider.value, 10);
+
+      valNodes.textContent = `${numNodes} Servers`;
+      valVnodes.textContent = `${numVnodes} vnodes`;
+      valKeys.textContent = `${totalKeys.toLocaleString()} keys`;
+
+      // Draw node points on the SVG ring
+      let svgHtml = '';
+      const cx = 130;
+      const cy = 130;
+      const radius = 100;
+
+      for (let i = 0; i < numNodes; i++) {
+        const color = COLORS[i % COLORS.length];
+        // Draw physical node positions
+        const angle = (i * 2 * Math.PI) / numNodes;
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        svgHtml += `<circle cx="${x}" cy="${y}" r="8" fill="${color}" stroke="#0a0c10" stroke-width="2" />`;
+      }
+      svgNodesGroup.innerHTML = svgHtml;
+
+      // Calculate key distribution with variance reduced by vnodes
+      const avgKeys = totalKeys / numNodes;
+      const varianceFactor = Math.max(0.02, 0.40 / Math.sqrt(numVnodes));
+
+      let keyCounts = [];
+      let totalAssigned = 0;
+
+      for (let i = 0; i < numNodes; i++) {
+        // Deterministic pseudo-jitter
+        const seed = (i * 17) % 7;
+        const skew = (seed - 3) * (varianceFactor * avgKeys * 0.4);
+        const count = Math.max(10, Math.round(avgKeys + skew));
+        keyCounts.push(count);
+        totalAssigned += count;
+      }
+
+      // Normalize so sum matches totalKeys
+      const diff = totalKeys - totalAssigned;
+      keyCounts[0] += diff;
+
+      // Render distribution bars
+      barsContainer.innerHTML = keyCounts.map((count, idx) => {
+        const color = COLORS[idx % COLORS.length];
+        const name = NAMES[idx];
+        const pct = ((count / totalKeys) * 100).toFixed(1);
+        return `
+          <div class="node-bar-row">
+            <div class="node-bar-info">
+              <span class="node-dot" style="background: ${color};"></span>
+              <span class="node-name">${name}</span>
+              <span class="node-stat">${count.toLocaleString()} keys (${pct}%)</span>
+            </div>
+            <div class="node-track">
+              <div class="node-fill" style="width: ${Math.min(100, (count / (avgKeys * 1.5)) * 100)}%; background: ${color};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Show rebalance metrics if node count changed
+      if (prevNodeCount !== numNodes) {
+        rebalanceCallout.style.display = 'block';
+        const movedFraction = 1 / numNodes;
+        const movedKeys = Math.round(totalKeys * movedFraction);
+        remappedPct.textContent = `${(movedFraction * 100).toFixed(0)}%`;
+        remappedCount.textContent = movedKeys.toLocaleString();
+      } else {
+        rebalanceCallout.style.display = 'none';
+      }
+    }
+
+    nodesSlider?.addEventListener('input', () => {
+      render();
+    });
+
+    vnodesSlider?.addEventListener('input', render);
+    keysSlider?.addEventListener('input', render);
+
+    btnAdd?.addEventListener('click', () => {
+      const cur = parseInt(nodesSlider.value, 10);
+      if (cur < 8) {
+        prevNodeCount = cur;
+        nodesSlider.value = (cur + 1).toString();
+        render();
+      }
+    });
+
+    btnKill?.addEventListener('click', () => {
+      const cur = parseInt(nodesSlider.value, 10);
+      if (cur > 3) {
+        prevNodeCount = cur;
+        nodesSlider.value = (cur - 1).toString();
+        render();
+      }
+    });
+
+    btnReset?.addEventListener('click', () => {
+      prevNodeCount = 4;
+      nodesSlider.value = '4';
+      vnodesSlider.value = '50';
+      keysSlider.value = '2000';
+      render();
+    });
+
+    render();
+  })();
+</script>
+
+<style>
+  .simulator-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin: 2.5rem 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .simulator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .sim-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sim-title {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .sim-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .sim-grid {
+      grid-template-columns: 1fr 1.3fr;
+    }
+  }
+
+  .sim-controls-pane {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .control-num {
+    font-family: var(--font-mono);
+    color: var(--accent-amber);
+    font-weight: 600;
+  }
+
+  .sim-slider {
+    width: 100%;
+    accent-color: var(--accent-amber);
+    cursor: pointer;
+  }
+
+  .sim-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+
+  .sim-output-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .ring-display-container {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 540px) {
+    .ring-display-container {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  .hash-ring-svg {
+    width: 150px;
+    height: 150px;
+    flex-shrink: 0;
+  }
+
+  .distribution-summary {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .dist-title {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .node-bars-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .node-bar-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .node-bar-info {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+  }
+
+  .node-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .node-name {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .node-stat {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .node-track {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .node-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width var(--transition-normal);
+  }
+
+  .rebalance-callout {
+    background: rgba(52, 211, 153, 0.08);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+</style>

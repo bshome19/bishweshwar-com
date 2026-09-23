@@ -1,0 +1,383 @@
+---
+// QueueBackpressureSimulator.astro — Interactive Producer, Queue Lag & Backpressure Simulator
+---
+
+<div class="simulator-card" id="queue-simulator">
+  <div class="simulator-header">
+    <div class="sim-title-group">
+      <span class="badge badge-amber">SIMULATOR</span>
+      <h3 class="sim-title">Message Queue Lag &amp; Backpressure Simulator</h3>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="queue-sim-reset">Reset</button>
+  </div>
+
+  <p class="sim-desc">
+    Tune producer publish rates against consumer group processing capacity. Observe how consumer lag accumulates, when queue buffers overflow into Dead-Letter Queues (DLQ), and how upstream backpressure protects asynchronous pipelines from catastrophic memory exhaustion.
+  </p>
+
+  <div class="sim-grid">
+    <!-- Controls -->
+    <div class="sim-controls-pane">
+      <div class="control-row">
+        <label for="q-producer-rate" class="control-label">
+          <span>Producer Arrival Rate:</span>
+          <span id="val-q-producer" class="control-num">800 msg/sec</span>
+        </label>
+        <input type="range" id="q-producer-rate" min="100" max="2500" step="50" value="800" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="q-consumer-speed" class="control-label">
+          <span>Speed per Consumer Worker:</span>
+          <span id="val-q-speed" class="control-num">200 msg/sec</span>
+        </label>
+        <input type="range" id="q-consumer-speed" min="50" max="500" step="25" value="200" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="q-worker-count" class="control-label">
+          <span>Consumer Workers (Pods):</span>
+          <span id="val-q-workers" class="control-num">3 Workers</span>
+        </label>
+        <input type="range" id="q-worker-count" min="1" max="8" step="1" value="3" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label for="q-buffer-cap" class="control-label">
+          <span>Queue Buffer Limit:</span>
+          <span id="val-q-buffer" class="control-num">2,000 msgs</span>
+        </label>
+        <input type="range" id="q-buffer-cap" min="500" max="5000" step="250" value="2000" class="sim-slider" />
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="sim-output-pane">
+      <div class="sim-stat-deck">
+        <div class="stat-box">
+          <span class="stat-label">Total Consumer Drain</span>
+          <span id="q-stat-drain" class="stat-value text-cyan">600 msg/sec</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Queue Delta</span>
+          <span id="q-stat-delta" class="stat-value text-rose">+200 msg/s</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">System State</span>
+          <span id="q-stat-status" class="stat-value text-amber">Lagging</span>
+        </div>
+      </div>
+
+      <!-- Queue Depth Bar -->
+      <div class="meter-card">
+        <div class="meter-labels">
+          <span>Buffer Utilization: <strong id="q-depth-text">1,250 / 2,000 msgs</strong></span>
+          <span id="q-pct-text">62.5%</span>
+        </div>
+        <div class="meter-track" role="progressbar" aria-valuenow="62.5" aria-valuemin="0" aria-valuemax="100">
+          <div id="q-meter-fill" class="meter-fill" style="width: 62.5%; background: var(--accent-amber);"></div>
+        </div>
+      </div>
+
+      <div id="q-backpressure-alert" class="sim-warning-banner" style="display: none;">
+        🛑 <strong>Backpressure Triggered:</strong> Queue depth exceeded 80% threshold! Producer HTTP status throttled or rate-limited to avoid memory OOM and broker disk starvation.
+      </div>
+
+      <div class="insight-box">
+        <span class="insight-title">Pipeline Dynamics:</span>
+        <p id="q-insight-text" class="insight-text">
+          Producers generate 800 msg/sec while 3 workers process 600 msg/sec. The queue accumulates 200 msg/sec of consumer lag. To stabilize, scale to at least 4 consumer pods or throttle upstream intake.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const producerSlider = document.getElementById('q-producer-rate');
+    const speedSlider = document.getElementById('q-consumer-speed');
+    const workersSlider = document.getElementById('q-worker-count');
+    const bufferSlider = document.getElementById('q-buffer-cap');
+
+    const valProducer = document.getElementById('val-q-producer');
+    const valSpeed = document.getElementById('val-q-speed');
+    const valWorkers = document.getElementById('val-q-workers');
+    const valBuffer = document.getElementById('val-q-buffer');
+
+    const statDrain = document.getElementById('q-stat-drain');
+    const statDelta = document.getElementById('q-stat-delta');
+    const statStatus = document.getElementById('q-stat-status');
+    const meterFill = document.getElementById('q-meter-fill');
+    const depthText = document.getElementById('q-depth-text');
+    const pctText = document.getElementById('q-pct-text');
+    const alertBox = document.getElementById('q-backpressure-alert');
+    const insightText = document.getElementById('q-insight-text');
+    const btnReset = document.getElementById('queue-sim-reset');
+
+    function update() {
+      const producer = parseInt(producerSlider.value, 10);
+      const speed = parseInt(speedSlider.value, 10);
+      const workers = parseInt(workersSlider.value, 10);
+      const capacity = parseInt(bufferSlider.value, 10);
+
+      valProducer.textContent = `${producer.toLocaleString()} msg/sec`;
+      valSpeed.textContent = `${speed} msg/sec`;
+      valWorkers.textContent = `${workers} ${workers === 1 ? 'Worker' : 'Workers'}`;
+      valBuffer.textContent = `${capacity.toLocaleString()} msgs`;
+
+      const drain = speed * workers;
+      const delta = producer - drain;
+
+      statDrain.textContent = `${drain.toLocaleString()} msg/sec`;
+
+      // Simulated buffer fill based on delta over 5 seconds of load
+      let simulatedDepth = Math.max(50, Math.min(capacity, capacity * 0.2 + (delta * 4)));
+      if (delta <= 0) simulatedDepth = Math.max(30, capacity * 0.05);
+
+      const fillPct = Math.min(100, (simulatedDepth / capacity) * 100);
+
+      depthText.textContent = `${Math.round(simulatedDepth).toLocaleString()} / ${capacity.toLocaleString()} msgs`;
+      pctText.textContent = `${fillPct.toFixed(1)}%`;
+      meterFill.style.width = `${fillPct}%`;
+
+      if (delta > 0) {
+        statDelta.textContent = `+${delta.toLocaleString()} msg/s`;
+        statDelta.className = 'stat-value text-rose';
+
+        if (fillPct >= 80) {
+          statStatus.textContent = 'Backpressure Saturated';
+          statStatus.className = 'stat-value text-rose';
+          meterFill.style.background = 'var(--accent-rose)';
+          alertBox.style.display = 'block';
+          insightText.textContent = `CRITICAL: Consumer lag is growing at +${delta} msg/sec and buffer is at ${fillPct.toFixed(1)}%! In production, the system must trigger backpressure (e.g. Reactive Streams, TCP window zero, or HTTP 429) or spill over to Dead-Letter Queues (DLQ).`;
+        } else {
+          statStatus.textContent = 'Lag Accumulating';
+          statStatus.className = 'stat-value text-amber';
+          meterFill.style.background = 'var(--accent-amber)';
+          alertBox.style.display = 'none';
+          insightText.textContent = `Producers outpace consumers by +${delta} msg/sec. Need at least ${Math.ceil(producer / speed)} workers to achieve parity and drain the buffer.`;
+        }
+      } else if (delta === 0) {
+        statDelta.textContent = '0 msg/s';
+        statDelta.className = 'stat-value text-cyan';
+        statStatus.textContent = 'Equilibrium';
+        statStatus.className = 'stat-value text-cyan';
+        meterFill.style.background = 'var(--accent-cyan)';
+        alertBox.style.display = 'none';
+        insightText.textContent = 'Producer rate precisely equals consumer throughput. Queue depth remains flat with steady state latency.';
+      } else {
+        statDelta.textContent = `${delta.toLocaleString()} msg/s`;
+        statDelta.className = 'stat-value text-emerald';
+        statStatus.textContent = 'Draining / Healthy';
+        statStatus.className = 'stat-value text-emerald';
+        meterFill.style.background = 'var(--accent-emerald)';
+        alertBox.style.display = 'none';
+        insightText.textContent = `Consumers have surplus capacity (${-delta} msg/sec headroom). Any transient bursts will drain promptly without queue buildup.`;
+      }
+    }
+
+    producerSlider?.addEventListener('input', update);
+    speedSlider?.addEventListener('input', update);
+    workersSlider?.addEventListener('input', update);
+    bufferSlider?.addEventListener('input', update);
+
+    btnReset?.addEventListener('click', () => {
+      producerSlider.value = '800';
+      speedSlider.value = '200';
+      workersSlider.value = '3';
+      bufferSlider.value = '2000';
+      update();
+    });
+
+    update();
+  })();
+</script>
+
+<style>
+  .simulator-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin: 2.5rem 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .simulator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .sim-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sim-title {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .sim-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .sim-grid {
+      grid-template-columns: 1fr 1.2fr;
+    }
+  }
+
+  .sim-controls-pane {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .control-num {
+    font-family: var(--font-mono);
+    color: var(--accent-amber);
+    font-weight: 600;
+  }
+
+  .sim-slider {
+    width: 100%;
+    accent-color: var(--accent-amber);
+    cursor: pointer;
+  }
+
+  .sim-output-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .sim-stat-deck {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .stat-box {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .text-cyan { color: var(--accent-cyan); }
+  .text-emerald { color: var(--accent-emerald); }
+  .text-amber { color: var(--accent-amber); }
+  .text-rose { color: var(--accent-rose); }
+
+  .meter-card {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .meter-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+  }
+
+  .meter-track {
+    width: 100%;
+    height: 12px;
+    background: var(--bg-muted);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .meter-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width var(--transition-normal), background var(--transition-fast);
+  }
+
+  .sim-warning-banner {
+    background: rgba(251, 113, 133, 0.1);
+    border: 1px solid rgba(251, 113, 133, 0.3);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--accent-rose);
+    line-height: 1.5;
+  }
+
+  .insight-box {
+    background: rgba(56, 189, 248, 0.06);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+  }
+
+  .insight-title {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: 0.35rem;
+  }
+
+  .insight-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+  }
+</style>

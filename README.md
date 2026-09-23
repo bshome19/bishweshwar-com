@@ -1,6 +1,6 @@
 # Bishweshwar Shome — Engineering Portfolio & Technical Knowledge Hub
 
-> Production personal portfolio and systems engineering knowledge base for **Bishweshwar Shome** ([bishweshwar.com](https://bishweshwar.com)).
+> Official personal portfolio, distributed systems laboratory, and system design learning platform for **Bishweshwar Shome** ([bishweshwar.com](https://bishweshwar.com)).
 
 [![Built with Astro](https://img.shields.io/badge/Built_with-Astro_4-FF5D01?style=flat&logo=astro)](https://astro.build/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
@@ -8,103 +8,34 @@
 
 ---
 
-## ⚡ Architecture & Tech Stack
+## ⚡ Overview & Platform Highlights
 
-- **Core Engine**: [Astro 4](https://astro.build/) (Static Site Generation / SSG).
-- **Language**: Strict [TypeScript](https://www.typescriptlang.org/).
-- **Content Engine**: Astro Content Collections (`src/content/`) with Zod schema validation.
-- **Styling**: Pure CSS Design System (`src/styles/global.css`) utilizing CSS custom properties, WCAG 2.2 AA accessibility, and zero external CSS runtime dependencies.
-- **Interactivity**: Vanilla TypeScript islands (`QuantumSimulator.astro`, `RateLimiterBenchmark.astro`, `ThemeToggle.astro`).
-- **SEO & Feeds**: Automatic XML sitemap generation (`/sitemap-index.xml`), RSS 2.0 feed (`/rss.xml`), Schema.org JSON-LD (`Person`, `WebSite`), and Open Graph tags.
+This repository contains the source code for [bishweshwar.com](https://bishweshwar.com), designed as a high-performance, accessible, and static-first systems engineering platform.
 
----
+### Core Sections
 
-## 📂 Project Structure
+1. **System Design & Architecture Learning Platform (`/learn`)**:
+   - **19 Curriculum Tracks**: From low-level computer architecture primitives and networking to PACELC consistency, database sharding, and 2026 Agentic AI architectures.
+   - **8 Interactive Simulators**: Isolated sandboxes demonstrating Consistent Hashing rings, Multi-Strategy Rate Limiters, LRU Doubly Linked Lists, Little's Law Capacity Calculators, Network RTT & Retry Storms, and Queue Backpressure.
+   - **5 Guided Learning Paths**: Role-based curricula for Backend SDE II $\rightarrow$ SDE III, Distributed Systems Specialists, Machine Coding Mastery, Staff+ Architects, and AI Systems Engineers.
 
-```text
-bishweshwar-com/
-├── public/
-│   ├── favicon.svg             # Terminal prompt SVG favicon
-│   └── robots.txt              # Crawler instructions & sitemap link
-├── src/
-│   ├── components/             # Reusable UI components & interactive islands
-│   │   ├── Footer.astro
-│   │   ├── Header.astro
-│   │   ├── QuantumSimulator.astro
-│   │   ├── RateLimiterBenchmark.astro
-│   │   └── ThemeToggle.astro
-│   ├── content/                # Typed Markdown/MDX content collections
-│   │   ├── blog/               # Migrated technical articles
-│   │   ├── labs/               # In-depth laboratory experiments
-│   │   ├── projects/           # Architectural project case studies
-│   │   └── config.ts           # Zod schema definitions
-│   ├── data/
-│   │   └── site.ts             # Verified career facts & site configuration
-│   ├── layouts/
-│   │   ├── ArticleLayout.astro # Layout for blog & labs with reading time & tags
-│   │   └── BaseLayout.astro    # Global HTML5 shell & SEO meta
-│   ├── pages/
-│   │   ├── 404.astro           # Custom technical 404 page
-│   │   ├── about.astro         # Background, philosophy & education
-│   │   ├── contact.astro       # Accessible contact form with anti-spam
-│   │   ├── experience.astro    # Career history timeline
-│   │   ├── index.astro         # Engineering portfolio homepage
-│   │   ├── resume.astro        # Web resume with print-to-PDF styles
-│   │   ├── blog/               # Article catalog & dynamic slugs
-│   │   ├── labs/               # Discipline categories & deep dives
-│   │   ├── projects/           # Project gallery & case study pages
-│   │   └── rss.xml.ts          # RSS 2.0 endpoint
-│   └── styles/
-│       └── global.css          # Design system, dark/light theme, typography
-├── astro.config.mjs
-├── package.json
-├── tsconfig.json
-├── LICENSE
-└── README.md
-```
+2. **Featured Engineering Projects (`/projects`)**:
+   - Production systems including **RateShield** (high-throughput multi-tier rate limiting engine in Go), **Quantum Knapsack Optimizer**, and **Microservices Architectures**.
+
+3. **Technical Laboratories (`/labs`)**:
+   - Deep-dive technical experiments spanning Go concurrency, Rust memory models, quantum superposition simulations, distributed failover patterns, and AST analysis.
+
+4. **Technical Writing & Publications (`/blog`)**:
+   - In-depth articles on distributed rate limiting benchmarks, REST API design with Go Fiber & GORM, and quantum genetic algorithms.
 
 ---
 
-## 🚀 Quick Start
+## 🛠️ Architecture & Standards
 
-### 1. Prerequisites
-- Node.js `18.19+` or `20+`
-- npm `9+`
-
-### 2. Installation
-```bash
-npm install
-```
-
-### 3. Local Development
-```bash
-npm run dev
-```
-Open [http://localhost:4321](http://localhost:4321) in your browser.
-
-### 4. Type Check & Production Build
-```bash
-npm run check  # Runs astro sync && tsc --noEmit
-npm run build  # Builds 100% static HTML output to dist/
-```
-
-### 5. Preview Static Bundle Locally
-```bash
-npm run preview
-```
-
----
-
-## ☁️ Deployment (Cloudflare Pages)
-
-The website compiles to 100% static assets inside `dist/`.
-
-1. Connect the repository to **Cloudflare Pages**.
-2. Set the build settings:
-   - **Framework preset**: `Astro`
-   - **Build command**: `npm run build`
-   - **Build output directory**: `dist`
-   - **Node.js version**: `20` (auto-detected via `.nvmrc`).
+- **Core Engine**: [Astro 4](https://astro.build/) (Static Site Generation / SSG). Zero runtime JS overhead for content reading.
+- **Type Safety**: Strict [TypeScript](https://www.typescriptlang.org/) across all data models, content collections, and interactive simulators.
+- **Design System**: Vanilla CSS design system (`src/styles/global.css`) with curated HSL color tokens, dark/light theme persistence, responsive layouts, and WCAG 2.2 AA compliance.
+- **Structured Data & SEO**: Schema.org JSON-LD (`Person`, `WebSite`, `TechArticle`, `BreadcrumbList`), Open Graph, Twitter Cards, automated XML sitemap, and RSS 2.0 feed.
 
 ---
 

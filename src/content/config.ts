@@ -48,8 +48,32 @@ const labsCollection = defineCollection({
   }),
 });
 
+const learnCollection = defineCollection({
+  type: 'content',
+  schema: z.object({
+    id: z.string().optional(),
+    title: z.string(),
+    description: z.string().optional(),
+    track: z.string(),
+    module: z.string().optional(),
+    level: z.enum(['beginner', 'intermediate', 'advanced', 'expert', 'all']).default('beginner'),
+    duration: z.number().optional(),
+    prerequisites: z.array(z.string()).default([]),
+    concepts: z.array(z.string()).default([]),
+    tags: z.array(z.string()).default([]),
+    interactive: z.object({
+      type: z.string(),
+      enabled: z.boolean().default(true),
+    }).optional(),
+    order: z.number().default(0),
+    draft: z.boolean().default(false),
+  }),
+});
+
 export const collections = {
   blog: blogCollection,
   projects: projectsCollection,
   labs: labsCollection,
+  learn: learnCollection,
 };
+

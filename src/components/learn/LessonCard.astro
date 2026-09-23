@@ -1,0 +1,199 @@
+---
+interface Props {
+  title: string;
+  href: string;
+  level: string;
+  duration?: number;
+  concepts?: string[];
+  interactive?: boolean;
+  order?: number;
+  description?: string;
+  lessonId?: string;
+}
+
+const {
+  title,
+  href,
+  level,
+  duration,
+  concepts = [],
+  interactive = false,
+  order,
+  description,
+  lessonId,
+} = Astro.props;
+
+const levelColors: Record<string, string> = {
+  beginner: 'badge-emerald',
+  intermediate: 'badge-cyan',
+  advanced: 'badge-amber',
+  expert: 'badge-purple',
+  all: 'badge-cyan',
+};
+---
+
+<article class="card card-interactive lesson-card" data-lesson-card-id={lessonId}>
+  <div class="lesson-card-body">
+    <div class="lesson-meta-row">
+      <div class="lesson-pills">
+        {typeof order === 'number' && order > 0 && (
+          <span class="lesson-number">#{order}</span>
+        )}
+        <span class:list={['badge', levelColors[level] || 'badge-cyan']}>
+          {level.toUpperCase()}
+        </span>
+        {interactive && (
+          <span class="badge badge-interactive">
+            ⚡ Interactive Simulator
+          </span>
+        )}
+      </div>
+
+      {duration && (
+        <span class="lesson-duration">
+          ⏱️ {duration} min
+        </span>
+      )}
+    </div>
+
+    <h4 class="lesson-card-title">
+      <a href={href}>{title}</a>
+    </h4>
+
+    {description && (
+      <p class="lesson-card-desc">{description}</p>
+    )}
+
+    {concepts.length > 0 && (
+      <div class="lesson-concepts-row">
+        {concepts.slice(0, 4).map((c) => (
+          <span class="concept-chip">#{c}</span>
+        ))}
+      </div>
+    )}
+  </div>
+
+  <div class="lesson-card-action">
+    <a href={href} class="lesson-start-link" aria-label={`Start lesson ${title}`}>
+      Start Lesson &rarr;
+    </a>
+  </div>
+</article>
+
+<style>
+  .lesson-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
+  }
+
+  .lesson-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+  }
+
+  .lesson-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .lesson-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .lesson-number {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--accent-primary);
+    font-weight: 700;
+  }
+
+  .badge-emerald {
+    background: rgba(52, 211, 153, 0.1);
+    color: var(--accent-emerald);
+    border-color: rgba(52, 211, 153, 0.25);
+  }
+
+  .badge-interactive {
+    background: rgba(251, 191, 36, 0.12);
+    color: var(--accent-amber);
+    border-color: rgba(251, 191, 36, 0.25);
+  }
+
+  .lesson-duration {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .lesson-card-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.35;
+  }
+
+  .lesson-card-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  .lesson-card-title a:hover {
+    color: var(--accent-primary);
+  }
+
+  .lesson-card-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin-bottom: 0.85rem;
+  }
+
+  .lesson-concepts-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+  }
+
+  .concept-chip {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.06);
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(6, 182, 212, 0.15);
+  }
+
+  .lesson-card-action {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .lesson-start-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  .lesson-start-link:hover {
+    color: var(--accent-primary-hover);
+    text-decoration: underline;
+  }
+</style>

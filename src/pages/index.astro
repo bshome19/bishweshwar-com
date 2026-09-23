@@ -48,6 +48,9 @@ const featuredLabs = allLabs
         <a href="/projects" class="btn btn-primary">
           View Projects
         </a>
+        <a href="/learn" class="btn btn-primary learn-hero-btn">
+          System Design Learn ⚡
+        </a>
         <a href="/labs" class="btn btn-secondary">
           Explore Labs 🔬
         </a>
@@ -126,6 +129,41 @@ const featuredLabs = allLabs
             </article>
           ))
         }
+      </div>
+    </div>
+  </section>
+
+  <!-- SYSTEM DESIGN & ARCHITECTURE PLATFORM -->
+  <section class="section section-learn-callout">
+    <div class="container">
+      <div class="card learn-feature-card">
+        <div class="learn-feature-content">
+          <div class="learn-badge-row">
+            <span class="badge badge-purple">SYSTEM DESIGN PLATFORM</span>
+            <span class="badge badge-cyan">19 TRACKS &bull; 8 SIMULATORS</span>
+            <span class="badge badge-amber">HLD + LLD + AI ARCHITECTURE</span>
+          </div>
+          <h2 class="learn-feature-title">Master System Design &amp; Distributed Systems</h2>
+          <p class="learn-feature-desc">
+            A comprehensive, interactive curriculum covering low-level computer architecture primitives, high-scale database sharding, consistency models (PACELC), distributed messaging, and agentic AI systems. Includes 8 isolated interactive simulators for real-time intuition.
+          </p>
+          <div class="learn-feature-actions">
+            <a href="/learn" class="btn btn-primary learn-btn-primary">
+              Explore 19 Curriculum Tracks &rarr;
+            </a>
+            <a href="/learn/playground" class="btn btn-secondary">
+              Interactive Simulators Playground ⚡
+            </a>
+          </div>
+        </div>
+        <div class="learn-simulators-preview">
+          <div class="sim-pill"><span>⚡</span> Consistent Hashing Ring</div>
+          <div class="sim-pill"><span>🛡️</span> Multi-Strategy Rate Limiter</div>
+          <div class="sim-pill"><span>🚀</span> LRU Cache + Doubly Linked List</div>
+          <div class="sim-pill"><span>🧮</span> Little's Law Capacity Calculator</div>
+          <div class="sim-pill"><span>🌐</span> Network RTT &amp; Retry Storms</div>
+          <div class="sim-pill"><span>📬</span> Queue Backpressure &amp; Lag</div>
+        </div>
       </div>
     </div>
   </section>
@@ -630,5 +668,103 @@ const featuredLabs = allLabs
     flex-wrap: wrap;
     gap: 0.75rem;
     margin-top: 0.5rem;
+  }
+
+  .learn-hero-btn {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(56, 189, 248, 0.9));
+    border: none;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(168, 85, 247, 0.25);
+  }
+
+  .learn-hero-btn:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 1), rgba(56, 189, 248, 1));
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35);
+  }
+
+  /* Learn Section Callout */
+  .section-learn-callout {
+    padding: 3rem 0;
+  }
+
+  .learn-feature-card {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(56, 189, 248, 0.05) 50%, var(--bg-surface) 100%);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    padding: 2.75rem 2.25rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media (min-width: 900px) {
+    .learn-feature-card {
+      grid-template-columns: 1.4fr 1fr;
+      align-items: center;
+    }
+  }
+
+  .learn-badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .learn-feature-title {
+    font-size: clamp(1.6rem, 3.5vw, 2.25rem);
+    letter-spacing: -0.025em;
+    margin: 0 0 1rem;
+    line-height: 1.25;
+  }
+
+  .learn-feature-desc {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin: 0 0 1.75rem;
+  }
+
+  .learn-feature-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .learn-btn-primary {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+    color: #ffffff !important;
+    border: none;
+  }
+
+  .learn-simulators-preview {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    background: var(--bg-subtle);
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+  }
+
+  @media (min-width: 500px) and (max-width: 899px) {
+    .learn-simulators-preview {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .sim-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
   }
 </style>

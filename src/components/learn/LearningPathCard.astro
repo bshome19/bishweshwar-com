@@ -1,0 +1,137 @@
+---
+import type { LearningPath } from '../../data/learnCurriculum';
+
+interface Props {
+  path: LearningPath;
+}
+
+const { path } = Astro.props;
+---
+
+<article class="card learning-path-card">
+  <div class="path-badge-row">
+    <span class="badge badge-purple">{path.badge}</span>
+    <span class="path-duration">⏱️ ~{path.estimatedHours} Hours</span>
+  </div>
+
+  <h3 class="path-title">{path.title}</h3>
+  <p class="path-desc">{path.description}</p>
+
+  <div class="path-audience">
+    <span class="audience-label">Target Audience:</span>
+    <p class="audience-text">{path.targetAudience}</p>
+  </div>
+
+  <div class="path-tracks-row">
+    <span class="tracks-label">Included Tracks:</span>
+    <div class="track-pills-list">
+      {path.trackIds.map((tId) => (
+        <a href={`/learn/${tId}`} class="badge badge-track-pill">
+          {tId}
+        </a>
+      ))}
+    </div>
+  </div>
+</article>
+
+<style>
+  .learning-path-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: border-color var(--transition-fast);
+  }
+
+  .learning-path-card:hover {
+    border-color: var(--accent-purple);
+  }
+
+  .path-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .path-duration {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .path-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.6rem 0;
+    color: var(--text-primary);
+  }
+
+  .path-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+  }
+
+  .path-audience {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .audience-label {
+    display: block;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    color: var(--accent-amber);
+    margin-bottom: 0.25rem;
+  }
+
+  .audience-text {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .path-tracks-row {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .tracks-label {
+    display: block;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .track-pills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .badge-track-pill {
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    background: var(--bg-muted);
+    color: var(--accent-primary);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+  }
+
+  .badge-track-pill:hover {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+  }
+</style>

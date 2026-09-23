@@ -1,0 +1,363 @@
+---
+// LruCachePlayground.astro — Interactive Doubly Linked List + Hash Map LRU Visualizer
+---
+
+<div class="simulator-card" id="lru-playground">
+  <div class="simulator-header">
+    <div class="sim-title-group">
+      <span class="badge badge-amber">SIMULATOR</span>
+      <h3 class="sim-title">LRU Cache: Doubly-Linked List &amp; Hash Map Playground</h3>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="lru-reset-btn">Reset Cache</button>
+  </div>
+
+  <p class="sim-desc">
+    Interactive visualization of how an <strong>LRU Cache</strong> achieves guaranteed $O(1)$ key lookup and $O(1)$ node promotion. Click keys below to trigger cache reads and watch node pointers splice in real time.
+  </p>
+
+  <div class="lru-interactive-zone">
+    <!-- Key Invocation Bar -->
+    <div class="key-buttons-deck">
+      <span class="keys-deck-label">Click a Key to <code>get(key)</code>:</span>
+      <div class="keys-grid">
+        <button type="button" class="lru-key-btn" data-key="user:101">user:101</button>
+        <button type="button" class="lru-key-btn" data-key="user:102">user:102</button>
+        <button type="button" class="lru-key-btn" data-key="user:103">user:103</button>
+        <button type="button" class="lru-key-btn" data-key="user:104">user:104</button>
+        <button type="button" class="lru-key-btn" data-key="user:105">user:105</button>
+        <button type="button" class="lru-key-btn" data-key="user:106">user:106</button>
+      </div>
+    </div>
+
+    <!-- Linked List Visualizer -->
+    <div class="chain-visualizer-card">
+      <div class="chain-header">
+        <span class="chain-caption">Doubly Linked List (Capacity: 4 Nodes)</span>
+        <span id="lru-action-status" class="badge badge-emerald">Ready</span>
+      </div>
+
+      <div class="chain-container" aria-live="polite">
+        <div class="sentinel-node head">HEAD<br><small>Most Recent</small></div>
+        <div class="pointer-arrow">&harr;</div>
+        <div id="lru-nodes-list" class="nodes-list"></div>
+        <div class="pointer-arrow">&harr;</div>
+        <div class="sentinel-node tail">TAIL<br><small>Eviction Target</small></div>
+      </div>
+    </div>
+
+    <!-- Pointers Log -->
+    <div class="pointer-log-card">
+      <span class="log-title">Step-by-Step O(1) Pointer Splicing Log:</span>
+      <div id="lru-log-feed" class="log-feed">
+        <p class="log-entry">Cache initialized with 4 warm nodes. Click any key above to inspect pointer updates.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const CAPACITY = 4;
+    let list = ['user:104', 'user:103', 'user:102', 'user:101']; // Head to Tail
+
+    const nodesList = document.getElementById('lru-nodes-list');
+    const logFeed = document.getElementById('lru-log-feed');
+    const actionStatus = document.getElementById('lru-action-status');
+    const resetBtn = document.getElementById('lru-reset-btn');
+    const keyBtns = document.querySelectorAll('.lru-key-btn');
+
+    function render(actionInfo) {
+      if (!nodesList) return;
+
+      nodesList.innerHTML = list.map((item, idx) => `
+        <div class="lru-node ${idx === 0 ? 'highlight-head' : ''}">
+          <div class="node-id">${item}</div>
+          <div class="node-idx">${idx === 0 ? 'MRU' : idx === list.length - 1 ? 'LRU' : `pos #${idx + 1}`}</div>
+        </div>
+        ${idx < list.length - 1 ? '<div class="pointer-arrow">&harr;</div>' : ''}
+      `).join('');
+
+      if (actionInfo) {
+        logFeed.innerHTML = `
+          <div class="log-entry">
+            <strong>${actionInfo.type}:</strong> ${actionInfo.detail}
+          </div>
+        `;
+        actionStatus.textContent = actionInfo.type;
+        actionStatus.className = `badge ${actionInfo.hit ? 'badge-emerald' : 'badge-amber'}`;
+      }
+    }
+
+    function handleAccess(key) {
+      const idx = list.indexOf(key);
+
+      if (idx !== -1) {
+        // Cache Hit: splice out and move to front
+        list.splice(idx, 1);
+        list.unshift(key);
+        render({
+          type: 'CACHE HIT',
+          hit: true,
+          detail: `Key <code>${key}</code> located in HashMap in O(1). Detached node from position #${idx + 1} and linked to HEAD (MRU). 0 database queries incurred.`,
+        });
+      } else {
+        // Cache Miss: evict tail if full, then prepend
+        let evicted = null;
+        if (list.length >= CAPACITY) {
+          evicted = list.pop();
+        }
+        list.unshift(key);
+        render({
+          type: 'CACHE MISS & EVICTION',
+          hit: false,
+          detail: `Key <code>${key}</code> not found in cache. Read from database, evicted oldest tail node <code>${evicted}</code> in O(1), and inserted <code>${key}</code> at HEAD.`,
+        });
+      }
+    }
+
+    keyBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-key');
+        if (key) handleAccess(key);
+      });
+    });
+
+    resetBtn?.addEventListener('click', () => {
+      list = ['user:104', 'user:103', 'user:102', 'user:101'];
+      render({
+        type: 'RESET',
+        hit: true,
+        detail: 'Cache restored to default state with keys [user:104, 103, 102, 101].',
+      });
+    });
+
+    render();
+  })();
+</script>
+
+<style>
+  .simulator-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin: 2.5rem 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .simulator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .sim-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sim-title {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .sim-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .lru-interactive-zone {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .key-buttons-deck {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+  }
+
+  .keys-deck-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+  }
+
+  .keys-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .lru-key-btn {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    background: var(--bg-surface);
+    color: var(--accent-primary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    transition: background-color var(--transition-fast), transform var(--transition-fast);
+  }
+
+  .lru-key-btn:hover {
+    background: var(--bg-elevated);
+    border-color: var(--accent-primary);
+    transform: translateY(-1px);
+  }
+
+  .chain-visualizer-card {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+
+  .chain-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .chain-caption {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .badge-emerald {
+    background: rgba(52, 211, 153, 0.1);
+    color: var(--accent-emerald);
+    border-color: rgba(52, 211, 153, 0.25);
+  }
+
+  .badge-amber {
+    background: rgba(251, 191, 36, 0.1);
+    color: var(--accent-amber);
+    border-color: rgba(251, 191, 36, 0.25);
+  }
+
+  .chain-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 1rem 0;
+  }
+
+  .sentinel-node {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .sentinel-node.head {
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+  }
+
+  .sentinel-node.tail {
+    background: rgba(251, 113, 133, 0.1);
+    border: 1px solid var(--accent-rose);
+    color: var(--accent-rose);
+  }
+
+  .sentinel-node small {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 400;
+    opacity: 0.85;
+  }
+
+  .nodes-list {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .lru-node {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    text-align: center;
+    flex-shrink: 0;
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
+  }
+
+  .lru-node.highlight-head {
+    border-color: var(--accent-emerald);
+    box-shadow: 0 0 10px rgba(52, 211, 153, 0.2);
+  }
+
+  .node-id {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .node-idx {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .pointer-arrow {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .pointer-log-card {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+  }
+
+  .log-title {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .log-feed {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .log-entry {
+    margin: 0;
+  }
+
+  .log-entry strong {
+    color: var(--text-primary);
+  }
+
+  .log-entry code {
+    color: var(--accent-primary);
+  }
+</style>

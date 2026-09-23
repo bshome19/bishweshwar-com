@@ -1,0 +1,386 @@
+---
+// CacheSimulator.astro — Interactive Cache Hit/Miss, Eviction & Stampede Simulator
+---
+
+<div class="simulator-card" id="cache-simulator">
+  <div class="simulator-header">
+    <div class="sim-title-group">
+      <span class="badge badge-amber">SIMULATOR</span>
+      <h3 class="sim-title">Cache Topology, Eviction &amp; Hit-Rate Simulator</h3>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="cache-sim-reset">Reset</button>
+  </div>
+
+  <p class="sim-desc">
+    Tune cache capacity, eviction strategy (LRU vs LFU), and traffic access distributions (Zipfian 80/20 vs Uniform). See how cache hit rate directly protects database throughput.
+  </p>
+
+  <div class="sim-grid">
+    <!-- Controls Pane -->
+    <div class="sim-controls-pane">
+      <div class="control-row">
+        <label for="cache-size" class="control-label">
+          <span>Cache Capacity (Keys):</span>
+          <span id="val-cache-size" class="control-num">1,000 keys</span>
+        </label>
+        <input type="range" id="cache-size" min="100" max="5000" step="100" value="1000" class="sim-slider" />
+      </div>
+
+      <div class="control-row">
+        <label class="control-label"><span>Eviction Policy:</span></label>
+        <div class="policy-selector">
+          <label class="radio-label">
+            <input type="radio" name="eviction" value="lru" checked />
+            <span>LRU (Least Recently Used)</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="eviction" value="lfu" />
+            <span>LFU (Least Frequently Used)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <label class="control-label"><span>Traffic Access Pattern:</span></label>
+        <div class="policy-selector">
+          <label class="radio-label">
+            <input type="radio" name="distribution" value="pareto" checked />
+            <span>80/20 Power Law (Pareto / Hotkeys)</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="distribution" value="uniform" />
+            <span>Uniform Random (Equal Chance)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="sim-actions">
+        <button type="button" id="btn-cache-run" class="btn btn-primary btn-sm">Simulate 10,000 QPS Load</button>
+      </div>
+    </div>
+
+    <!-- Metrics Pane -->
+    <div class="sim-output-pane">
+      <div class="sim-stat-deck">
+        <div class="stat-box">
+          <span class="stat-label">Cache Hit Rate</span>
+          <span id="cache-stat-hitrate" class="stat-value text-emerald">88.4%</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">DB Load (Offloaded)</span>
+          <span id="cache-stat-dbload" class="stat-value text-cyan">1,160 QPS</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Memory Footprint</span>
+          <span id="cache-stat-mem" class="stat-value text-amber">1.8 MB</span>
+        </div>
+      </div>
+
+      <!-- Hit / Miss Bar Visualizer -->
+      <div class="meter-card">
+        <div class="meter-labels">
+          <span class="meter-hit">Hits: <strong id="meter-hit-text">8,840</strong></span>
+          <span class="meter-miss">Misses: <strong id="meter-miss-text">1,160</strong></span>
+        </div>
+        <div class="meter-track" role="progressbar" aria-valuenow="88.4" aria-valuemin="0" aria-valuemax="100">
+          <div id="meter-fill" class="meter-fill" style="width: 88.4%;"></div>
+        </div>
+      </div>
+
+      <div class="insight-box">
+        <span class="insight-title">💡 Architectural Takeaway:</span>
+        <p id="cache-insight-text" class="insight-text">
+          Under real-world Zipfian traffic (where 20% of items generate 80% of reads), an in-memory cache holding just 1,000 keys deflects nearly 90% of requests away from relational disk tables.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const sizeSlider = document.getElementById('cache-size');
+    const valSize = document.getElementById('val-cache-size');
+    const statHitRate = document.getElementById('cache-stat-hitrate');
+    const statDbLoad = document.getElementById('cache-stat-dbload');
+    const statMem = document.getElementById('cache-stat-mem');
+    const meterFill = document.getElementById('meter-fill');
+    const meterHitText = document.getElementById('meter-hit-text');
+    const meterMissText = document.getElementById('meter-miss-text');
+    const insightText = document.getElementById('cache-insight-text');
+    const btnRun = document.getElementById('btn-cache-run');
+    const btnReset = document.getElementById('cache-sim-reset');
+
+    function update() {
+      const cap = parseInt(sizeSlider.value, 10);
+      valSize.textContent = `${cap.toLocaleString()} keys`;
+
+      let eviction = 'lru';
+      document.querySelectorAll('input[name="eviction"]').forEach((r) => {
+        if (r.checked) eviction = r.value;
+      });
+
+      let dist = 'pareto';
+      document.querySelectorAll('input[name="distribution"]').forEach((r) => {
+        if (r.checked) dist = r.value;
+      });
+
+      let hitRate = 0;
+      if (dist === 'pareto') {
+        const ratio = Math.min(1, cap / 2500);
+        hitRate = 0.70 + (0.28 * ratio);
+        if (eviction === 'lfu') hitRate += 0.015;
+      } else {
+        const ratio = Math.min(1, cap / 10000);
+        hitRate = Math.min(0.55, 0.10 + (0.45 * ratio));
+      }
+
+      hitRate = Math.min(0.99, Math.max(0.05, hitRate));
+      const hitPct = (hitRate * 100).toFixed(1);
+      const totalReq = 10000;
+      const hits = Math.round(totalReq * hitRate);
+      const misses = totalReq - hits;
+      const memMb = ((cap * 1.8) / 1024).toFixed(1);
+
+      statHitRate.textContent = `${hitPct}%`;
+      statDbLoad.textContent = `${misses.toLocaleString()} QPS`;
+      statMem.textContent = `${memMb} MB`;
+
+      meterFill.style.width = `${hitPct}%`;
+      meterHitText.textContent = hits.toLocaleString();
+      meterMissText.textContent = misses.toLocaleString();
+
+      if (dist === 'uniform') {
+        insightText.textContent = `Uniform access patterns severely degrade cache utility (${hitPct}% hit rate). When every key is equally likely to be read, caching provides minimal defense against disk I/O.`;
+      } else {
+        insightText.textContent = `Under Pareto skew, a modest ${cap.toLocaleString()}-key cache absorbs ${hitPct}% of incoming reads, cutting database connection saturation and disk read heads by ${Math.round(hitRate * 10)}x.`;
+      }
+    }
+
+    sizeSlider?.addEventListener('input', update);
+    document.querySelectorAll('input[name="eviction"], input[name="distribution"]').forEach((input) => {
+      input.addEventListener('change', update);
+    });
+
+    btnRun?.addEventListener('click', update);
+
+    btnReset?.addEventListener('click', () => {
+      sizeSlider.value = '1000';
+      const rLru = document.querySelector('input[name="eviction"][value="lru"]');
+      if (rLru) rLru.checked = true;
+      const rPareto = document.querySelector('input[name="distribution"][value="pareto"]');
+      if (rPareto) rPareto.checked = true;
+      update();
+    });
+
+    update();
+  })();
+</script>
+
+<style>
+  .simulator-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin: 2.5rem 0;
+    box-shadow: var(--shadow-md);
+  }
+
+  .simulator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .sim-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .sim-title {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .sim-desc {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .sim-grid {
+      grid-template-columns: 1fr 1.2fr;
+    }
+  }
+
+  .sim-controls-pane {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .control-num {
+    font-family: var(--font-mono);
+    color: var(--accent-amber);
+    font-weight: 600;
+  }
+
+  .sim-slider {
+    width: 100%;
+    accent-color: var(--accent-amber);
+    cursor: pointer;
+  }
+
+  .policy-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .radio-label input {
+    accent-color: var(--accent-primary);
+  }
+
+  .sim-actions {
+    margin-top: 0.5rem;
+  }
+
+  .sim-output-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .sim-stat-deck {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .stat-box {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .text-cyan { color: var(--accent-cyan); }
+  .text-emerald { color: var(--accent-emerald); }
+  .text-amber { color: var(--accent-amber); }
+
+  .meter-card {
+    background: var(--bg-base);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .meter-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    font-family: var(--font-mono);
+  }
+
+  .meter-hit {
+    color: var(--accent-emerald);
+  }
+
+  .meter-miss {
+    color: var(--accent-rose);
+  }
+
+  .meter-track {
+    width: 100%;
+    height: 12px;
+    background: rgba(251, 113, 133, 0.2);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .meter-fill {
+    height: 100%;
+    background: var(--accent-emerald);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-normal);
+  }
+
+  .insight-box {
+    background: rgba(56, 189, 248, 0.06);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+  }
+
+  .insight-title {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: 0.35rem;
+  }
+
+  .insight-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+  }
+</style>
