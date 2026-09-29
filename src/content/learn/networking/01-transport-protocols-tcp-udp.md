@@ -1,112 +1,185 @@
 ---
-id: networking-transport-protocols-tcp-udp
-title: "Transport Protocols: TCP Three-Way Handshake, Flow Control, and UDP Trade-Offs"
+id: networking-tcp-udp
+title: "How Data Actually Travels Across a Network"
 track: networking
-module: transport
+module: transport-protocols
 level: beginner
-duration: 25
-prerequisites: [foundations-latency-throughput]
-concepts: [tcp, udp, handshake, flow-control, congestion-control, head-of-line-blocking, quic]
-tags: [networking, protocols, tcp, udp, transport]
+duration: 24
+prerequisites: [foundations-computer-architecture]
+concepts: [tcp, udp, three-way-handshake, congestion-control, packet-loss, reliable-delivery, flow-control]
+tags: [beginner, networking, tcp, udp, protocols, transport-layer]
+interactive:
+  type: tcp-handshake
+  enabled: true
 order: 1
 ---
 
-# Transport Protocols: TCP, UDP, and the QUIC Revolution
+# How Data Actually Travels Across a Network
 
-Every byte of data sent over the public internet or between microservices in an enterprise cluster relies on the Transport Layer (Layer 4 of the OSI model). Choosing between TCP, UDP, or modern QUIC/HTTP/3 dictates whether your service guarantees strict in-order delivery or optimizes for raw real-time speed.
+Here's a scenario that seems like a miracle: you open your browser, type a URL, and within 200ms you're looking at a webpage that required data from a server 5,000km away — data that traveled through dozens of intermediate devices, potentially across undersea fiber optic cables, and arrived perfectly intact and in the correct order.
 
----
+The data doesn't travel as a single stream. It gets chopped into small chunks called **packets** (usually around 1,500 bytes each). Each packet is independently routed through the network — they might take different paths, arrive in different order, or not arrive at all. The target machine then reassembles them into the original data.
 
-## 1. Transmission Control Protocol (TCP): Reliable, In-Order Stream
+And all of this just... works. How?
 
-TCP is a connection-oriented, stateful byte-stream protocol designed for environments where data loss or corruption is completely intolerable (financial ledgers, REST APIs, database queries, SSH sessions).
-
-### The Three-Way Handshake
-
-Before any application payload (like an HTTP GET request) can be transmitted, client and server must negotiate sequence numbers and buffer sizes:
-
-```
-Client                                     Server
-  │                                           │
-  │────────── 1. SYN (seq=x) ────────────────►│ (SYN_RCVD)
-  │                                           │
-  │◄───────── 2. SYN-ACK (seq=y, ack=x+1) ───│
-  │                                           │
-  │────────── 3. ACK (ack=y+1) ──────────────►│ (ESTABLISHED)
-  │                                           │
-  │==== Connection Established: Ready for Data ====│
-```
-
-- **Cost**: The handshake requires **1 full Round-Trip Time (1 RTT)** before a single byte of application data travels. If network RTT is $50\text{ms}$, your request has already taken $50\text{ms}$ before your backend code even runs!
-- When paired with legacy TLS 1.2 encryption, handshakes took up to **3 RTTs** ($150\text{ms}$) just to negotiate the connection.
-
-### TCP Reliability Guarantees
-1. **Sequence Numbering & In-Order Delivery**: If packets arrive out of order at the operating system network stack, TCP buffers them until missing packets arrive. The application never observes disordered bytes.
-2. **Flow Control (Sliding Window)**: Prevents a fast sender from overwhelming a slow receiver's memory buffer. The receiver advertises its available `Window Size` in every TCP header.
-3. **Congestion Control (AIMD: Additive Increase / Multiplicative Decrease)**: Prevents the global internet switches and routers from collapsing under traffic. Algorithms like Cubic, Reno, and Google BBR probe network capacity, slowly ramping up transmission rates until packet drop is detected, whereupon transmission rate is halved immediately.
-
-### The Fatal Flaw: Head-of-Line (HoL) Blocking
-Because TCP guarantees strict byte-order delivery:
-- If packet #2 of 100 is lost in transit, packets #3 through #100 are held in kernel memory.
-- The operating system will **not** release the remaining data to the application until packet #2 is retransmitted and acknowledged.
-- In HTTP/2, where hundreds of parallel API requests are multiplexed over a single shared TCP socket, a single dropped packet stalls **all concurrent streams simultaneously**.
+The answer is a protocol called **TCP** — one of the most elegant pieces of engineering in all of computing. Understanding TCP means understanding why networks behave the way they do, why certain optimizations work, and what you're actually trading when you choose UDP instead.
 
 ---
 
-## 2. User Datagram Protocol (UDP): Connectionless & Lightweight
+## The Problem TCP Solves
 
-UDP is a stateless, packet-oriented protocol. It does not establish connections, does not track sequence numbers, and does not guarantee delivery or packet order.
+The underlying network (IP — the Internet Protocol) is fundamentally **unreliable**. It makes no guarantees:
 
-```
-Client ──[ UDP Datagram 1 ]──► Server
-Client ──[ UDP Datagram 2 ]──► (Dropped by router)
-Client ──[ UDP Datagram 3 ]──► Server (Received before Datagram 1)
-```
+- Packets might be **lost** (a router's queue fills up; it drops packets to relieve pressure)
+- Packets might arrive **out of order** (two packets might take different paths through the network)
+- Packets might be **duplicated** (some network hardware retransmits to be safe)
+- Packets might be **corrupted** (radiation, electrical interference, hardware bugs)
 
-### Why Choose UDP?
-1. **Zero Connection Overhead (0 RTT)**: The sender immediately sends the packet without waiting for handshake confirmations.
-2. **Minimal Header Size**: A standard TCP header is $20\text{ to }60\text{ bytes}$; a UDP header is only $8\text{ bytes}$, reducing network bandwidth waste.
-3. **No Head-of-Line Blocking**: If a datagram is dropped, subsequent datagrams are delivered directly to the application without stalling.
-4. **Ideal Use Cases**:
-   - **DNS Queries**: Lightweight request-reply pairs where a lost query can simply be re-sent after a short timeout.
-   - **Real-Time Audio / Video (WebRTC, VoIP)**: A human ear will not notice a missing $20\text{ms}$ audio frame, but will notice an audio freeze caused by TCP retransmission delays.
-   - **Multiplayer Gaming**: Player position updates at 60 FPS. Past coordinates are useless once a newer position update is available.
+IP handles routing — getting packets from source to destination. TCP handles everything else: reliability, ordering, flow control, and congestion control.
+
+Think of IP as the postal system and TCP as a protocol you agree on with someone you're mailing important documents to: "I'll number each page. If you don't confirm receipt of page 7 within 30 seconds, I'll send it again. Please always acknowledge what you received."
 
 ---
 
-## 3. The 2026 Modern Standard: QUIC and HTTP/3
+## How TCP Works: Building Reliability from Unreliability
 
-To solve TCP's fundamental Head-of-Line blocking and handshake latency issues without giving up encryption and reliability, the internet engineering community built **QUIC** (standardized in RFC 9000).
+### Step 1: The Three-Way Handshake
+
+Before any data is exchanged, TCP establishes a **connection** using a three-way handshake:
 
 ```
-Traditional Stack                  Modern QUIC Stack
-┌────────────────────────┐         ┌────────────────────────┐
-│ HTTP/2                 │         │ HTTP/3                 │
-├────────────────────────┤         ├────────────────────────┤
-│ TLS 1.2 / 1.3          │         │ QUIC                   │
-├────────────────────────┤         │ (Encryption + Streams) │
-│ TCP                    │         ├────────────────────────┤
-├────────────────────────┤         │ UDP (Kernel Layer)     │
-│ IP                     │         ├────────────────────────┤
-└────────────────────────┘         │ IP                     │
-                                   └────────────────────────┘
+Client                          Server
+  │                               │
+  │────── SYN (seq=100) ─────────►│  "I want to connect. My sequence starts at 100."
+  │                               │
+  │◄───── SYN-ACK (seq=200,      │  "OK. Your 100 received. My sequence starts at 200."
+  │        ack=101) ──────────────│
+  │                               │
+  │────── ACK (ack=201) ─────────►│  "Got it. Your 200 received. Let's talk."
+  │                               │
+  │         [Connected]           │
 ```
 
-### Key Advantages of QUIC
-- **Built on UDP**: Runs in user space over UDP, bypassing ossified legacy internet routers that block non-TCP/UDP packets.
-- **Combined 0-RTT / 1-RTT Handshake**: QUIC merges transport connection setup and TLS 1.3 cryptographic key negotiation into a single round trip. Repeat visitors achieve **0-RTT connection resumption**.
-- **Independent Streams**: Multiplexed HTTP/3 streams are completely independent. A packet drop on Stream A only pauses Stream A; Streams B, C, and D continue processing with zero interruption!
-- **Connection Migration**: TCP connections are identified by the 4-tuple `(Client IP, Client Port, Server IP, Server Port)`. When a user switches from Home Wi-Fi to 5G Cellular, their IP changes and the TCP socket breaks immediately. QUIC uses a 64-bit `Connection ID`, allowing seamless uninterrupted data transfer while roaming.
+The **sequence numbers** (seq=100, seq=200) are how TCP tracks ordering. Every byte sent has a sequence number. The **acknowledgment number** (ack=101) tells the other side "I've received everything up to byte 100; send from 101 next."
+
+This three-way handshake costs **one network round-trip** before any data can be sent. For a connection from New York to London (75ms round-trip), you've spent 75ms just establishing the connection. This is why connection reuse (HTTP keep-alive, connection pooling) matters so much.
+
+### Step 2: Sliding Window — Sending Many Packets at Once
+
+Sending one packet, waiting for an acknowledgment, then sending the next would be incredibly slow. Instead, TCP uses a **sliding window**: the sender can have many packets "in flight" simultaneously, up to the **window size**.
+
+```
+[Sent & Acknowledged] [In flight, unacknowledged] [Not yet sent]
+   PKT 1  PKT 2  PKT 3 │ PKT 4  PKT 5  PKT 6 │ PKT 7  PKT 8  PKT 9
+                        └─── Window = 3 ─────┘
+```
+
+As acknowledgments arrive, the window slides forward. This keeps the network pipe full — rather than waiting idle for each ack, the sender is continuously transmitting.
+
+The window size is constrained by two things:
+- **Flow control**: The receiver tells the sender its available buffer space. Don't send more than the receiver can store.
+- **Congestion control**: The network between sender and receiver has limited capacity. Sending too fast causes packet loss. TCP must probe for the right rate.
+
+### Step 3: Congestion Control — Not Flooding the Network
+
+If every sender on the internet sent at maximum speed, routers would drop packets constantly (they'd be overwhelmed). TCP is designed to be "well-behaved" — it backs off when it detects congestion.
+
+TCP's congestion control algorithm (in simplified form):
+1. **Slow start**: Begin by sending a small amount (1-10 packets). Double the rate every round-trip until...
+2. **Congestion avoidance**: You detect a packet loss (evidence of congestion). Cut your rate in half.
+3. **Back to step 1** or **additive increase**: Slowly increase the rate again.
+
+This creates a characteristic sawtooth pattern: rate grows, packet loss occurs, rate drops, rate grows, etc. The network finds its equilibrium.
+
+The key insight: **TCP's "slow start" isn't slow in absolute terms — it's slow compared to sending everything at once**. But it means the first few round-trips of a TCP connection are always running below maximum throughput. For short-lived connections (like many HTTP/1.1 requests), the connection closes before the rate ever gets high. This is one reason HTTP/2 (which multiplexes many requests over one TCP connection) is faster — the connection has time to warm up.
 
 ---
 
-## Comparison Matrix
+## When Does a Packet Get Lost?
 
-| Feature | TCP | UDP | QUIC (HTTP/3) |
-| :--- | :--- | :--- | :--- |
-| **Connection Setup** | 1 RTT (3-way handshake) | 0 RTT (None) | 0–1 RTT (Combined TLS) |
-| **Reliability** | Guaranteed (Retransmission) | None (Best-effort) | Guaranteed per-stream |
-| **Packet Ordering** | Strict global stream | None (Out-of-order) | Strict per-stream |
-| **Head-of-Line Blocking**| Yes (Entire connection) | No | No (Isolated per stream) |
-| **Header Overhead** | 20–60 bytes | 8 bytes | Variable (~10–25 bytes) |
-| **IP Roaming Support** | No (Broken socket) | Application-managed | Native Connection ID |
+Packet loss happens when a network device's queue is full and it has no choice but to drop packets. This is called **tail-drop** and happens most commonly:
+
+- At busy router interfaces under high load
+- On congested WiFi or cellular links
+- At datacenter ingress when traffic spikes
+
+TCP handles packet loss by retransmitting: if an acknowledgment for a packet doesn't arrive within a timeout period, the sender retransmits. The timeout is based on the **RTT (Round-Trip Time)** — TCP measures the actual round-trip latency and sets its timeout accordingly.
+
+But retransmission takes time — the full RTT to detect the loss (waiting for the ack that never comes) plus another RTT to retransmit and receive an ack. This is called **head-of-line blocking**: if packet 5 is lost, everything from packet 6 onward is held back until packet 5 is retransmitted and received, even if packets 6-100 arrived perfectly.
+
+Head-of-line blocking is one of TCP's most significant performance limitations, and it's a core motivation for QUIC (the protocol underlying HTTP/3), which we'll cover in the next lesson.
+
+---
+
+## UDP: When You Don't Need All of TCP's Guarantees
+
+**UDP** (User Datagram Protocol) is the opposite of TCP. It provides almost nothing:
+- No connection establishment (no handshake)
+- No acknowledgments
+- No retransmission
+- No ordering guarantee
+- No congestion control
+
+You send a packet. It might arrive. It might not. You'll never know unless you implement that logic yourself.
+
+Why would anyone use this?
+
+Because **TCP's reliability features have costs**:
+- The handshake adds a round-trip latency overhead
+- Retransmission adds latency when packets are lost
+- Head-of-line blocking stalls fast packets behind slow ones
+- Congestion control limits throughput (though this is often appropriate)
+
+For some applications, these costs matter more than the guarantees:
+
+**Real-time gaming**: A player's position update is stale by the time it's retransmitted. Better to skip it and send the next update. Use UDP.
+
+**Live video streaming**: Video is continuously generated. A missed frame is better than a paused video waiting for a retransmit. Use UDP.
+
+**DNS queries**: A tiny request expecting a tiny response. The "reliable delivery" overhead of TCP is larger than the payload. Use UDP (with retry logic if no response comes).
+
+**VoIP**: Same as live video. A brief drop in audio is better than a pause. Use UDP.
+
+The pattern: **UDP is appropriate when your application has its own mechanisms for handling unreliable delivery, or when unreliable delivery is explicitly acceptable**.
+
+DNS could use TCP for reliability but the efficiency cost isn't worth it for tiny queries. Video streaming has its own buffering and quality-adaptation logic that handles packet loss better than TCP retransmission would. Gaming uses UDP with custom application-layer position reconciliation.
+
+---
+
+## QUIC: Fixing TCP's Problems by Throwing It Out
+
+HTTP/3 is built on **QUIC** — a transport protocol that Google designed to address the performance limitations of TCP while keeping reliability.
+
+QUIC's key innovations:
+
+**1. 0-RTT Connection Establishment**
+
+Regular TLS over TCP requires 2-3 round-trips before data can flow (TCP handshake + TLS handshake). QUIC's connection establishment is optimized: for a previously-visited server, you can send data in the *first* packet with 0 additional round-trips.
+
+**2. Multiplexing Without Head-of-Line Blocking**
+
+HTTP/2 over TCP can send multiple request/response pairs over one TCP connection. But if a packet in one stream is lost, TCP's ordering guarantees stall *all* streams while that packet is retransmitted. Head-of-line blocking at the TCP level blocks everything.
+
+QUIC operates at a level above the network and can acknowledge packets per-stream. Packet loss in stream A doesn't block stream B.
+
+**3. Connection Migration**
+
+TCP connections are identified by (source IP, source port, destination IP, destination port). If you switch from WiFi to cellular, your IP changes, your connection is broken, and everything has to restart.
+
+QUIC connections have a **connection ID** that persists across IP address changes. When you switch networks, the connection seamlessly migrates — no reconnect, no disruption.
+
+---
+
+## What This Means for System Design
+
+Understanding TCP and UDP shapes real system design decisions:
+
+**Connection pooling**: TCP handshakes are expensive. Keeping connections open and reusing them (connection pools for databases, HTTP keep-alive) eliminates the repeated handshake cost. A database with a fresh connection per query wastes ~2ms per query just on handshake — at 10,000 QPS, that's wasted latency everywhere.
+
+**Load balancer layer choice**: L4 load balancers (TCP level) are fast but simple — they see TCP flows, not individual HTTP requests. L7 load balancers (HTTP level) can make smarter routing decisions (path-based routing, header inspection) but are more expensive.
+
+**Timeout design**: TCP will retransmit silently for a long time before giving up (sometimes 90-120 seconds by default). For service-to-service calls in a microservices architecture, you need to set aggressive application-level timeouts (say, 2-5 seconds) — don't wait for TCP's timeout machinery.
+
+**UDP in service meshes**: Some high-performance service communication (like the gRPC-over-QUIC being adopted in some envoy proxies) uses UDP under the hood for the latency benefits. This is still evolving.
+
+In the next lesson, we'll trace what happens when you type a URL — through DNS, through TLS negotiation, to HTTP — and understand the full stack of protocols that make web communication work.

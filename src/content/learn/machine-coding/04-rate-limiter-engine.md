@@ -1,152 +1,211 @@
 ---
-id: mc-rate-limiter-engine
-title: "Machine Coding Case Study: Multi-Strategy Rate Limiter Engine"
+id: machine-coding-rate-limiter
+title: "Building a Rate Limiter from Scratch"
 track: machine-coding
-module: case-studies
+module: algorithms
 level: advanced
-duration: 45
-prerequisites: [lld-five-step-framework, pattern-strategy]
-concepts: [rate-limiter, token-bucket, fixed-window, sliding-window-log, leaky-bucket, concurrency, atomic-operations]
-tags: [machine-coding, lld, rate-limiter, algorithms, redis]
+duration: 30
+prerequisites: [reliability-circuit-breakers-retries]
+concepts: [rate-limiting, token-bucket, sliding-window, fixed-window, thread-safety, distributed-rate-limiting]
+tags: [advanced, machine-coding, rate-limiter, token-bucket, algorithms]
 interactive:
-  type: rate-limiter
+  type: rate-limiter-simulator
   enabled: true
 order: 4
 ---
 
-# Machine Coding: Multi-Strategy Rate Limiter Engine
+# Building a Rate Limiter from Scratch
 
-Rate limiters protect servers from denial-of-service attacks, brute-force credential stuffing, API abuse, and cascading overload.
+A rate limiter answers a simple question: "Should this request be allowed, or has this client exceeded their limit?"
 
-In machine coding interviews, you are expected to design an extensible rate-limiting framework supporting multiple swappable algorithms (Token Bucket, Fixed Window, Sliding Window Log) with thread-safe client tracking.
+The implementation has to be fast (checking every request adds latency), correct (no client should exceed their limit even under concurrent access), and fair (clients shouldn't be able to game the system).
 
----
-
-## 1. Algorithm Comparison
-
-| Algorithm | Memory per Client | Burst Handling | Accuracy | Use Case |
-| :--- | :--- | :--- | :--- | :--- |
-| **Token Bucket** | $O(1)$ (2 numbers) | Allows controlled bursts up to bucket capacity | High | General API Gateways, Stripe, AWS |
-| **Fixed Window** | $O(1)$ (1 counter) | Double-burst hazard at window boundaries | Low | Simple hourly limits |
-| **Sliding Window Log** | $O(N)$ (Timestamps) | Perfectly smooth, zero boundary anomalies | 100% Exact | High-security financial endpoints |
-| **Leaky Bucket** | $O(1)$ (Queue size) | Smooths traffic to strictly constant egress rate| High | Ingest pipelines, message brokers |
+This exercise builds three rate limiting algorithms — each solving a problem the previous one had.
 
 ---
 
-## 2. Core Architecture: Strategy Pattern
+## Algorithm 1: Fixed Window Counter
 
-```
-                       ┌───────────────────────────────┐
-                       │     <<interface>>             │
-                       │     RateLimiterStrategy       │
-                       ├───────────────────────────────┤
-                       │ + allowRequest(clientId): bool│
-                       └───────────────▲───────────────┘
-                                       │
-        ┌──────────────────────────────┼──────────────────────────────┐
-        │                              │                              │
-┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐
-│ TokenBucketLimiter      │  │ FixedWindowLimiter      │  │ SlidingWindowLogLimiter │
-└─────────────────────────┘  └─────────────────────────┘  └─────────────────────────┘
-```
+The simplest approach. Divide time into fixed windows (e.g., 1-minute windows). Count requests per window. If the count exceeds the limit, reject.
 
----
+```python
+import time
+from threading import Lock
 
-## 3. High-Performance Token Bucket Implementation
-
-The **Token Bucket** algorithm allows short bursts of traffic while enforcing a smooth long-term average rate:
-- A bucket holds at most `capacity` tokens.
-- Tokens are refilled at a constant rate of `refillRatePerSecond`.
-- Every incoming request consumes 1 token. If tokens $>0$, request is admitted; else rejected.
-
-### The Lazy Refill Optimization
-Instead of running a background timer to add tokens every millisecond (which would burn CPU for millions of idle users), calculate token refill **lazily** on each incoming request:
-
-```java
-public class TokenBucketLimiter implements RateLimiterStrategy {
-    private final long capacity;
-    private final double refillRatePerSecond;
-
-    // Thread-safe state container per client
-    private static class Bucket {
-        double tokens;
-        long lastRefillTimestamp;
-
-        Bucket(long capacity) {
-            this.tokens = capacity;
-            this.lastRefillTimestamp = System.currentTimeMillis();
-        }
-    }
-
-    private final ConcurrentMap<String, Bucket> clientBuckets = new ConcurrentHashMap<>();
-
-    public TokenBucketLimiter(long capacity, double refillRatePerSecond) {
-        this.capacity = capacity;
-        this.refillRatePerSecond = refillRatePerSecond;
-    }
-
-    @Override
-    public boolean allowRequest(String clientId) {
-        Bucket bucket = clientBuckets.computeIfAbsent(clientId, k -> new Bucket(capacity));
-
-        synchronized (bucket) {
-            long now = System.currentTimeMillis();
-            double secondsPassed = (now - bucket.lastRefillTimestamp) / 1000.0;
-
-            // Refill tokens proportional to elapsed time
-            bucket.tokens = Math.min(capacity, bucket.tokens + (secondsPassed * refillRatePerSecond));
-            bucket.lastRefillTimestamp = now;
-
-            if (bucket.tokens >= 1.0) {
-                bucket.tokens -= 1.0;
-                return true; // Allowed!
-            }
-            return false; // Throttled! HTTP 429
-        }
-    }
-}
+class FixedWindowRateLimiter:
+    def __init__(self, max_requests: int, window_seconds: int):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.counters: dict[str, dict] = {}  # client_id → {window, count}
+        self.lock = Lock()
+    
+    def allow(self, client_id: str) -> bool:
+        with self.lock:
+            now = time.time()
+            current_window = int(now / self.window_seconds)
+            
+            entry = self.counters.get(client_id)
+            if entry is None or entry["window"] != current_window:
+                self.counters[client_id] = {"window": current_window, "count": 1}
+                return True
+            
+            if entry["count"] < self.max_requests:
+                entry["count"] += 1
+                return True
+            
+            return False
 ```
 
+**The problem**: Boundary spikes. A client sends 100 requests at 11:59:59 (window 1) and 100 more at 12:00:00 (window 2). They've sent 200 requests in 2 seconds — but the rate limiter sees 100 per window, which is within the limit of 100/minute. The fixed window boundary creates a loophole.
+
 ---
 
-## 4. Sliding Window Log: 100% Boundary Accuracy
+## Algorithm 2: Sliding Window Log
 
-The Sliding Window Log maintains a sorted set or queue of request timestamps for each client:
+Track the exact timestamp of every request. Count how many timestamps fall within the sliding window.
 
-```java
-public class SlidingWindowLogLimiter implements RateLimiterStrategy {
-    private final int maxRequests;
-    private final long windowSizeMillis;
-    private final ConcurrentMap<String, Queue<Long>> clientLogs = new ConcurrentHashMap<>();
+```python
+from collections import deque
 
-    @Override
-    public boolean allowRequest(String clientId) {
-        Queue<Long> log = clientLogs.computeIfAbsent(clientId, k -> new LinkedList<>());
-
-        synchronized (log) {
-            long now = System.currentTimeMillis();
-            long windowStart = now - windowSizeMillis;
-
-            // Purge all timestamps older than window boundary
-            while (!log.isEmpty() && log.peek() <= windowStart) {
-                log.poll();
-            }
-
-            if (log.size() < maxRequests) {
-                log.offer(now);
-                return true;
-            }
-            return false;
-        }
-    }
-}
+class SlidingWindowRateLimiter:
+    def __init__(self, max_requests: int, window_seconds: int):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests: dict[str, deque] = {}
+        self.lock = Lock()
+    
+    def allow(self, client_id: str) -> bool:
+        with self.lock:
+            now = time.time()
+            window_start = now - self.window_seconds
+            
+            if client_id not in self.requests:
+                self.requests[client_id] = deque()
+            
+            timestamps = self.requests[client_id]
+            
+            # Remove expired timestamps
+            while timestamps and timestamps[0] < window_start:
+                timestamps.popleft()
+            
+            if len(timestamps) < self.max_requests:
+                timestamps.append(now)
+                return True
+            
+            return False
 ```
 
+**No boundary spike problem**: The window slides continuously, so there's no boundary to exploit.
+
+**The problem**: Memory. Storing every timestamp for every client uses significant memory at high request rates. 10,000 clients × 1000 requests/minute × 8 bytes per timestamp = 80MB. It adds up.
+
 ---
 
-## Interactive Rate Limiter Simulator
+## Algorithm 3: Token Bucket
 
-Test your understanding using the **Rate Limiter Engine Simulator** above:
-1. Fire burst traffic across Token Bucket, Fixed Window, and Sliding Window Log algorithms.
-2. Observe how the Fixed Window allows double the configured rate right at the boundary crossover!
-3. Compare memory consumption differences across high concurrency.
+The token bucket is the most widely used rate limiting algorithm. It's memory-efficient, handles bursts gracefully, and is simple to implement.
+
+**The mental model**: Imagine a bucket that holds tokens. Tokens are added at a steady rate (the "refill rate"). Each request consumes one token. If the bucket is empty, the request is rejected.
+
+```python
+class TokenBucketRateLimiter:
+    def __init__(self, capacity: int, refill_rate: float):
+        self.capacity = capacity          # Max burst size
+        self.refill_rate = refill_rate    # Tokens per second
+        self.buckets: dict[str, dict] = {}
+        self.lock = Lock()
+    
+    def allow(self, client_id: str) -> bool:
+        with self.lock:
+            now = time.time()
+            
+            if client_id not in self.buckets:
+                self.buckets[client_id] = {
+                    "tokens": self.capacity,
+                    "last_refill": now
+                }
+            
+            bucket = self.buckets[client_id]
+            
+            # Refill tokens based on elapsed time
+            elapsed = now - bucket["last_refill"]
+            new_tokens = elapsed * self.refill_rate
+            bucket["tokens"] = min(self.capacity, bucket["tokens"] + new_tokens)
+            bucket["last_refill"] = now
+            
+            if bucket["tokens"] >= 1:
+                bucket["tokens"] -= 1
+                return True
+            
+            return False
+```
+
+**Why token bucket is elegant**:
+- **Burst handling**: The bucket can hold up to `capacity` tokens, allowing short bursts above the steady-state rate. A bucket with capacity=100 and refill=10/sec allows bursts of 100 requests, then settles to 10/sec.
+- **Memory efficient**: One small struct per client (tokens + timestamp), regardless of request rate.
+- **No boundary effects**: The bucket refills continuously — no window boundaries to exploit.
+
+**This is what Stripe, GitHub, and most API providers use** (or a close variant). The capacity controls burst size, the refill rate controls sustained throughput.
+
+---
+
+## Distributed Rate Limiting
+
+All three implementations above work in a single process. But if you have multiple API servers behind a load balancer, each server has its own rate limiter with its own counts. A client could hit each server separately and get N× the intended rate limit.
+
+**The fix**: Centralize the rate limiter state in Redis.
+
+```python
+import redis
+
+class RedisTokenBucket:
+    def __init__(self, redis_client: redis.Redis, capacity: int, refill_rate: float):
+        self.redis = redis_client
+        self.capacity = capacity
+        self.refill_rate = refill_rate
+    
+    def allow(self, client_id: str) -> bool:
+        # Lua script runs atomically in Redis — no race conditions
+        lua_script = """
+        local key = KEYS[1]
+        local capacity = tonumber(ARGV[1])
+        local refill_rate = tonumber(ARGV[2])
+        local now = tonumber(ARGV[3])
+        
+        local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
+        local tokens = tonumber(bucket[1]) or capacity
+        local last_refill = tonumber(bucket[2]) or now
+        
+        local elapsed = now - last_refill
+        tokens = math.min(capacity, tokens + elapsed * refill_rate)
+        
+        if tokens >= 1 then
+            tokens = tokens - 1
+            redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
+            redis.call('EXPIRE', key, 3600)
+            return 1
+        else
+            redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
+            redis.call('EXPIRE', key, 3600)
+            return 0
+        end
+        """
+        
+        result = self.redis.eval(lua_script, 1, f"ratelimit:{client_id}",
+                                  self.capacity, self.refill_rate, time.time())
+        return result == 1
+```
+
+The Lua script runs atomically in Redis — no race conditions even with multiple API servers calling simultaneously. This is how production distributed rate limiters work.
+
+---
+
+## The Bigger Picture
+
+Rate limiting connects to multiple concepts from this platform:
+- **Reliability**: Rate limiting protects systems from overload (load shedding)
+- **APIs**: Rate limit headers tell clients their limits (`X-RateLimit-Remaining`)
+- **Distributed Systems**: Centralizing state in Redis is a distributed coordination problem
+- **Caching**: The token bucket state is essentially cached in Redis
+
+Building it from scratch gives you intuition for all of these.

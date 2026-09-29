@@ -1,84 +1,139 @@
 ---
-id: expert-staff-architecture-reviews-and-adrs
-title: "Staff+ Architecture Reviews and Architectural Decision Records (ADRs)"
+id: expert-architecture-reviews
+title: "Architecture Decision Records and Technical Reviews"
 track: expert
-module: technical-leadership
+module: engineering-leadership
 level: expert
-duration: 35
-prerequisites: [hld-end-to-end-hld-framework]
-concepts: [adr, architecture-reviews, technical-leadership, trade-off-analysis, staff-plus, governance]
-tags: [expert, leadership, adr, architecture, staff-engineer]
+duration: 20
+prerequisites: [hld-architecture-styles]
+concepts: [adr, architecture-review, technical-debt, rfc, design-doc, decision-making]
+tags: [expert, architecture, decision-records, reviews, leadership]
+interactive:
+  type: adr-template
+  enabled: true
 order: 1
 ---
 
-# Staff+ Architecture Reviews and Architectural Decision Records (ADRs)
+# Architecture Decision Records and Technical Reviews
 
-Junior and mid-level engineers are evaluated on how quickly and cleanly they implement features. Staff, Principal, and Distinguished Architects are evaluated on **the long-term organizational and technical consequences of their decisions**.
+As systems grow, the biggest risk isn't making wrong technical decisions — it's making decisions that nobody remembers the reasoning behind, leading to future teams repeating the same mistakes or undoing work without understanding why it was done.
 
-At the Staff+ level, software architecture is less about drawing boxes and more about **governance, consensus-building, technical risk reduction, and preserving institutional memory**.
-
----
-
-## 1. Why Great Architectures Fail: The Tribal Knowledge Trap
-
-Have you ever joined a new engineering team, looked at a piece of backend code or database schema, and thought:
-*"Why on earth did the previous team build this bizarre, over-complicated custom queue instead of just using standard Kafka?"*
-
-Two years later, you discover:
-- Two years ago, the team was on an isolated on-premise datacenter with zero internet access and strict compliance rules banning Java runtimes.
-- The decision was 100% rational given the constraints of the time. But because **no record was kept of the context and trade-offs**, future engineers spent months refactoring it—only to hit the exact same physical constraints!
+**Architecture Decision Records (ADRs)** and **technical design reviews** are the tools that preserve decision context and enable informed evolution.
 
 ---
 
-## 2. Architectural Decision Records (ADRs)
+## Architecture Decision Records (ADRs)
 
-An **Architectural Decision Record (ADR)** is a lightweight, version-controlled markdown document that captures an important architectural decision, the context in which it was made, the alternatives considered, and the resulting trade-offs.
-
-### The Canonical Michael Nygard ADR Template
+An ADR documents a single architectural decision: what was decided, why, what alternatives were considered, and what the consequences are.
 
 ```markdown
-# ADR-0024: Adopt Asynchronous Change Data Capture (CDC) via Debezium
+# ADR-0042: Use PostgreSQL Instead of MongoDB for the Order Service
 
-## Status
-Accepted (2026-03-24)
+## Status: Accepted
 
 ## Context
-Our Order Service currently uses dual-writes in application code to update 
-both PostgreSQL and Elasticsearch. Under high peak traffic, network timeouts 
-between the App and Elasticsearch cause search indexes to silently drift out 
-of sync with the primary database, resulting in customer support escalations.
-Distributed transactions (2PC) are ruled out due to unacceptable latency impacts.
+The Order Service needs a database. We considered PostgreSQL (relational) 
+and MongoDB (document). Our order data has complex relationships (orders → 
+line items → products → inventory), and we need ACID transactions for 
+order creation (debit inventory + create order atomically).
 
 ## Decision
-We will eliminate application dual-writes and adopt Change Data Capture (CDC) 
-using Debezium tailing the PostgreSQL Write-Ahead Log (WAL), streaming change 
-events through an Apache Kafka topic to downstream index consumers.
+Use PostgreSQL.
+
+## Rationale
+- Order data has clear relational structure (orders, line items, products)
+- We need multi-table transactions (ACID) for order creation
+- The team has strong PostgreSQL expertise
+- Our existing infrastructure already includes PostgreSQL
 
 ## Alternatives Considered
-1. Two-Phase Commit (2PC): Rejected due to 5x latency overhead and single point of failure.
-2. Periodic Full-Table Batch Sync: Rejected because search updates would lag by 15+ minutes.
-3. Transactional Outbox Pattern: Viable, but requires manual schema migrations and custom tailing workers.
+- **MongoDB**: Better for hierarchical data, but lacks multi-document ACID 
+  transactions (at the time of this decision). Doesn't fit our relational 
+  data model well.
+- **DynamoDB**: Excellent scalability, but limited query flexibility. Our 
+  reporting needs require complex joins.
 
-## Consequences & Trade-Offs
-Positive:
-- 100% elimination of dual-write race conditions.
-- Primary database performance decoupled from search indexing latency.
-- Full event replayability from Kafka offsets during downstream outages.
-
-Negative / Costs:
-- Operational overhead of maintaining a Debezium Kafka Connect cluster.
-- End-to-end consistency is now eventual (typical lag: 50–200ms).
+## Consequences
+- We accept the operational burden of managing PostgreSQL (backups, 
+  replication, connection pooling)
+- We'll need to shard if order volume exceeds single-instance capacity 
+  (estimated at 2+ years based on growth projections)
+- The team can leverage existing PostgreSQL tooling and expertise
 ```
 
-### Best Practices for ADRs
-- **Store in Git with Code**: Keep ADRs in the repository under `docs/adr/0001-record-architecture-decisions.md`.
-- **Immutable History**: If a decision changes, do **not** edit the original ADR. Create a new ADR that explicitly marks the older ADR as `Superseded by ADR-0052`.
-- **Review in Pull Requests**: Treat ADRs like code. Circulate PRs for team discussion and peer review before merging.
+**Why ADRs matter**: Two years from now, a new engineer will ask "why didn't we use MongoDB?" Without an ADR, the answer is lost. The new engineer might spend weeks investigating MongoDB migration, only to rediscover the same reasons. Or worse, they might migrate without understanding the original constraints, breaking the transaction guarantees.
+
+**ADR best practices**:
+- Number them sequentially (ADR-0001, ADR-0002, ...)
+- Keep them short (one page)
+- Store them in the repository alongside the code they describe
+- ADRs are immutable — if a decision is reversed, write a new ADR that supersedes the old one (don't edit the original)
 
 ---
 
-## 3. How to Conduct a High-Impact Architecture Review
+## Design Documents (RFCs)
 
-1. **Focus on Non-Functional Requirements (NFRs)**: Don't spend review time debating variable naming. Focus on failure modes, blast radiuses, data migration rollback plans, and cloud cost scaling.
-2. **Steel-Man the Counterarguments**: Explicitly articulate why an alternative architecture might be superior, and demonstrate quantitatively why the proposed approach remains the better trade-off.
-3. **Disagree and Commit**: High-performing engineering organizations do not wait for 100% universal consensus. Once trade-offs are documented in an ADR, the team aligns and executes.
+For larger decisions — introducing a new service, changing a core abstraction, adopting a new technology — a design document (often called an RFC, "Request for Comments") provides more detail than an ADR.
+
+**Structure**:
+1. **Problem statement**: What problem are we solving? Why now?
+2. **Goals and non-goals**: What will this achieve? What is explicitly out of scope?
+3. **Proposed solution**: The technical approach, with diagrams
+4. **Alternatives considered**: Other approaches and why they were rejected
+5. **Migration plan**: How do we get from here to there?
+6. **Risks and mitigations**: What could go wrong?
+7. **Open questions**: What do we need input on?
+
+The goal of a design doc isn't to get approval — it's to get feedback. The best design docs surface problems the author didn't see, by exposing the thinking to diverse perspectives.
+
+---
+
+## Technical Debt: Making It Visible
+
+Technical debt isn't inherently bad. Taking shortcuts to ship faster is a valid strategy — as long as you track the debt and plan to pay it down.
+
+**Make debt visible**: Maintain a tech debt registry (a simple spreadsheet or issue tracker). For each item:
+- What's the debt?
+- What's the impact? (slows development? increases incidents? limits scaling?)
+- What's the cost to fix?
+- What triggers urgency? ("If we hit 10x traffic, this breaks")
+
+**Categorize debt**:
+- **Reckless/deliberate**: "We know this is wrong but we're shipping it anyway" — the most dangerous kind. Document it loudly.
+- **Prudent/deliberate**: "We'll ship with a simpler approach and refactor later" — legitimate if tracked.
+- **Reckless/inadvertent**: "We didn't know this was a problem" — learned after the fact. Fix when discovered.
+- **Prudent/inadvertent**: "Now we know how we should have built it" — natural learning. Plan the refactor.
+
+---
+
+## The Architecture Review Process
+
+Regular architecture reviews prevent drift — the gradual divergence between the intended architecture and the actual system.
+
+**What to review**:
+- New services being introduced
+- Significant changes to data models
+- New external dependencies
+- Changes to communication patterns between services
+- Security-sensitive changes
+
+**How to review**:
+- The author presents the design doc
+- Reviewers ask questions focused on: trade-offs, failure modes, scalability, operational impact
+- The outcome is either "approved," "approved with conditions," or "needs revision"
+- Decisions are recorded as ADRs
+
+The most valuable reviews are collaborative, not adversarial. The goal is to make the design better, not to prove it's wrong.
+
+---
+
+## Building Architectural Judgment
+
+Architectural judgment — the ability to make good design decisions quickly — comes from:
+
+1. **Breadth of experience**: Seeing many different systems and their failure modes
+2. **Understanding trade-offs**: Every choice has costs. The skill is knowing which costs are acceptable for your context
+3. **Learning from failures**: Post-incident reviews that honestly examine what went wrong and why
+4. **Reading others' work**: ADRs, design docs, and case studies from other companies
+
+This platform has tried to build your breadth — from foundations through databases, distributed systems, caching, messaging, reliability, and beyond. The real learning continues when you apply these concepts to real systems and discover the nuances that no course can fully capture.
