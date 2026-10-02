@@ -1,7 +1,7 @@
 export const SITE = {
   name: 'Bishweshwar Shome',
-  title: 'Bishweshwar Shome | SDE III @ F5 | Golang Developer',
-  description: 'Official portfolio of Bishweshwar Shome, Software Development Engineer III at F5 specializing in Golang backend architecture and distributed systems.',
+  title: 'Bishweshwar Shome | Senior Software Engineer | Golang & Distributed Systems',
+  description: 'Portfolio of Bishweshwar Shome — Senior Software Engineer (7+ years) specializing in Go, distributed systems, and high-throughput microservices architecture.',
   url: 'https://www.bishweshwar.com',
   email: 'bshome19@gmail.com',
   location: 'Bengaluru, India',
@@ -10,12 +10,12 @@ export const SITE = {
     linkedin: 'https://www.linkedin.com/in/bshome19/',
     medium: 'https://medium.com/@bshome19',
   },
-  currentRole: {
+  previousRole: {
     title: 'SDE III',
     company: 'F5 Networks Innovation Private Limited',
     period: 'Feb 2026 – Sept 2026',
     location: 'Bengaluru, India',
-    focus: 'AI agents and workflows for automated unit-test generation, MR diff coverage workflows, and cross-repository feature enhancements.',
+    focus: 'Built AI agents and workflows for automated unit-test generation, MR diff coverage workflows, and cross-repository feature enhancements.',
   },
 };
 

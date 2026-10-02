@@ -20,23 +20,23 @@ const featuredLabs = allLabs
 ---
 
 <BaseLayout
-  title="Bishweshwar Shome | SDE III @ F5 | Golang Developer"
-  description="Official portfolio of Bishweshwar Shome, Software Development Engineer III at F5 specializing in Golang backend architecture and distributed systems."
+  title={SITE.title}
+  description={SITE.description}
 >
   <!-- HERO SECTION -->
   <section class="hero-section">
     <div class="container hero-inner">
       <div class="hero-badge-row">
         <span class="badge badge-active">
-          <span class="status-dot"></span> Available for SDE III / Senior Engineering Roles
+          <span class="status-dot"></span> Open to Senior Engineering Roles
         </span>
-        <span class="badge badge-cyan">6+ Years Backend &amp; Distributed Systems</span>
+        <span class="badge badge-cyan">7+ Years Backend &amp; Distributed Systems</span>
       </div>
 
       <h1 class="hero-title">
         Bishweshwar Shome
       </h1>
-      <p class="hero-role-title">Senior Software Engineer &amp; Golang Developer | SDE III</p>
+      <p class="hero-role-title">Senior Software Engineer &amp; Golang Developer</p>
 
       <p class="hero-tagline">
         Senior Software Engineer (SDE III) specializing in <strong>Go (Golang)</strong>, <strong>distributed systems</strong>,
@@ -49,27 +49,21 @@ const featuredLabs = allLabs
           View Projects
         </a>
         <a href="/learn" class="btn btn-primary learn-hero-btn">
-          System Design Learn ⚡
-        </a>
-        <a href="/labs" class="btn btn-secondary">
-          Explore Labs 🔬
+          Learn System Design ⚡
         </a>
         <a href="/resume" class="btn btn-secondary">
           Resume
         </a>
-        <a href={SITE.social.github} target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
-          GitHub ↗
-        </a>
       </div>
 
-      <!-- Current Focus Callout -->
+      <!-- Latest Role Callout -->
       <div class="current-focus-card">
         <div class="focus-header">
-          <span class="badge badge-amber">CURRENT FOCUS</span>
-          <span class="focus-role">{SITE.currentRole.title} @ {SITE.currentRole.company}</span>
+          <span class="badge badge-amber">LATEST ROLE</span>
+          <span class="focus-role">{SITE.previousRole.title} @ {SITE.previousRole.company}</span>
         </div>
         <p class="focus-desc">
-          {SITE.currentRole.focus}
+          {SITE.previousRole.focus}
         </p>
       </div>
     </div>
